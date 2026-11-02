@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Volume2 } from "lucide-react";
+import { AudioLines, Loader2, Volume2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TagFilter, TagInput } from "@/components/tag-controls";
 import {
@@ -88,173 +87,181 @@ export default function VoicePage() {
     setClips((prev) => prev.filter((c) => c.id !== id));
   }
 
-  return (
-    <main className="mx-auto flex w-full max-w-[1800px] flex-1 flex-col gap-6 px-6 py-10">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Seslendirme (AI Voice)</h1>
-        <p className="text-muted-foreground text-sm">
-          Gemini TTS ile metinden seslendirme üret. Ürettiğin klipleri{" "}
-          <a href="/video/editor" className="text-primary underline-offset-4 hover:underline">
-            Editör
-          </a>
-          &apos;de &quot;Seslendirme &gt; Kütüphaneden seç&quot; ile videoya ekleyebilirsin.
-        </p>
-      </header>
+  const voiceInfo = (name: string) => TTS_VOICE_INFO.find((v) => v.name === name);
 
-      <Card>
-        <CardContent className="flex flex-col gap-4 pt-6">
-          <Textarea
+  return (
+    // One window: writer on the left, clip library on the right (scrolls inside).
+    <main className="mx-auto grid h-[calc(100dvh-3.5rem)] w-full max-w-[1800px] grid-cols-1 gap-4 overflow-hidden px-6 py-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+      <section className="flex min-h-0 flex-col gap-4">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">Seslendirme</h1>
+          <p className="text-muted-foreground mt-0.5 text-sm">
+            Gemini TTS ile metinden ses üret. Klipler{" "}
+            <a href="/video/editor" className="text-primary hover:underline">
+              Editör
+            </a>
+            &apos;deki Seslendirme katmanından eklenebilir.
+          </p>
+        </div>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleGenerate();
+          }}
+          className="bg-card ring-foreground/10 focus-within:ring-primary/40 flex min-h-0 flex-1 flex-col rounded-lg ring-1 transition-shadow"
+        >
+          <textarea
             placeholder="Seslendirilecek metni yaz..."
             value={text}
             onChange={(e) => setText(e.target.value)}
-            rows={4}
-            className="resize-none text-base"
+            className="placeholder:text-muted-foreground thin-scrollbar block min-h-32 w-full flex-1 resize-none bg-transparent px-4 pt-4 pb-2 text-base leading-relaxed outline-none"
           />
-          <p className={`text-xs ${overLimit ? "text-destructive" : "text-muted-foreground"}`}>
-            {finalBytes} / {TTS_MAX_BYTES} bayt (stil talimatı dahil)
-            {overLimit && " — Gemini TTS tek istekte bunu kabul etmiyor, metni kısalt"}
-          </p>
 
-          <div className="space-y-1.5">
-            <span className="text-muted-foreground text-xs">
-              Stil talimatı (opsiyonel) — Gemini TTS ton/tempo/duyguyu ayrı bir parametre değil,
-              doğal dil talimatıyla kontrol ediyor. Hazır birini seç ya da kendi talimatını yaz.
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {VOICE_STYLE_PRESETS.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setStyleInstruction(p.instruction)}
-                  className={`rounded-md border px-3 py-1 text-xs transition-colors ${
-                    styleInstruction === p.instruction
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-input hover:bg-accent"
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-              {styleInstruction && (
-                <button
-                  type="button"
-                  onClick={() => setStyleInstruction("")}
-                  className="text-muted-foreground rounded-md px-3 py-1 text-xs underline-offset-4 hover:underline"
-                >
-                  Temizle
-                </button>
-              )}
+          <div className="border-border/60 flex flex-col gap-2.5 border-t px-3 py-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-medium">Ton</span>
+              <span className={cn("text-xs tabular-nums", overLimit ? "text-destructive" : "text-muted-foreground")}>
+                {finalBytes} / {TTS_MAX_BYTES} bayt{overLimit && ", metni kısalt"}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {VOICE_STYLE_PRESETS.map((p) => {
+                const active = styleInstruction === p.instruction;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setStyleInstruction(active ? "" : p.instruction)}
+                    className={cn(
+                      "rounded-md border px-2.5 py-1 text-xs transition-colors",
+                      active
+                        ? "border-primary bg-primary/15 text-foreground"
+                        : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
             </div>
             <input
               type="text"
-              placeholder="Örn: neşeli bir tonda, yavaş ve sakin, heyecanlı, fısıldayarak"
+              placeholder="Ya da kendi talimatını yaz: neşeli bir tonda, yavaş ve sakin, fısıldayarak..."
               value={styleInstruction}
               onChange={(e) => setStyleInstruction(e.target.value)}
-              className="border-input w-full rounded border bg-transparent px-3 py-2 text-sm"
+              className="border-input placeholder:text-muted-foreground focus-visible:border-ring dark:bg-input/20 h-9 w-full rounded-md border bg-transparent px-3 text-sm outline-none"
             />
           </div>
 
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="min-w-48 space-y-1.5">
-              <span className="text-muted-foreground text-xs">Ses</span>
-              <div className="flex items-center gap-1.5">
-                <Select value={voice} onValueChange={(v) => v && setVoice(v)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="w-80 max-h-72">
-                    {TTS_VOICE_INFO.map((v) => (
-                      <SelectItem key={v.name} value={v.name}>
-                        {v.name}{" "}
-                        <span className="text-muted-foreground">
-                          — {v.gender}, {v.tone}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="icon"
-                  onClick={() => handlePreviewVoice(voice)}
-                  disabled={previewLoadingVoice === voice}
-                  title="Sesi dinle"
-                >
-                  {previewLoadingVoice === voice ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Volume2 className="size-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            <TagInput value={tag} onChange={setTag} suggestions={allTags} />
-
-            <Button onClick={handleGenerate} disabled={!text.trim() || generating || overLimit} className="ml-auto">
-              {generating ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Üretiliyor...
-                </>
-              ) : (
-                "Üret"
-              )}
+          <div className="border-border/60 flex flex-wrap items-center gap-2 border-t p-2.5">
+            <Select value={voice} onValueChange={(v) => v && setVoice(v)}>
+              <SelectTrigger className="w-60" aria-label="Ses">
+                <SelectValue>
+                  {(v: string) => {
+                    const info = voiceInfo(v);
+                    return (
+                      <span className="truncate">
+                        {v} {info && <span className="text-muted-foreground">{info.gender}, {info.tone}</span>}
+                      </span>
+                    );
+                  }}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="max-h-72 w-80">
+                {TTS_VOICE_INFO.map((v) => (
+                  <SelectItem key={v.name} value={v.name}>
+                    {v.name}{" "}
+                    <span className="text-muted-foreground">
+                      {v.gender}, {v.tone}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => handlePreviewVoice(voice)}
+              disabled={previewLoadingVoice === voice}
+              title="Sesi dinle"
+              aria-label="Sesi dinle"
+            >
+              {previewLoadingVoice === voice ? <Loader2 className="animate-spin" /> : <Volume2 />}
+            </Button>
+            <TagInput compact value={tag} onChange={setTag} suggestions={allTags} />
+            <Button type="submit" disabled={!text.trim() || generating || overLimit} className="ml-auto">
+              {generating ? <Loader2 className="animate-spin" data-icon="inline-start" /> : <AudioLines data-icon="inline-start" />}
+              {generating ? "Üretiliyor" : "Üret"}
             </Button>
           </div>
+          {error && <p className="text-destructive px-3 pb-3 text-sm">{error}</p>}
+        </form>
+      </section>
 
-          {error && <p className="text-destructive text-sm">{error}</p>}
-        </CardContent>
-      </Card>
-
-      <TagFilter tags={allTags} active={filterTag} onChange={setFilterTag} />
-
-      {visibleClips.length === 0 ? (
-        <div className="text-muted-foreground flex flex-1 items-center justify-center py-24 text-center text-sm">
-          {clips.length === 0 ? "Henüz seslendirme üretmedin." : "Bu etikette henüz seslendirme yok."}
+      <section className="bg-card ring-foreground/10 flex min-h-0 flex-col rounded-lg ring-1">
+        <div className="border-border/60 flex flex-wrap items-center gap-3 border-b px-4 py-3">
+          <h2 className="text-sm font-semibold">Kütüphane</h2>
+          <span className="text-muted-foreground text-xs">{clips.length} klip</span>
+          <div className="ml-auto">
+            <TagFilter tags={allTags} active={filterTag} onChange={setFilterTag} />
+          </div>
         </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {visibleClips.map((clip) => (
-            <Card key={clip.id}>
-              <CardContent className="flex flex-col gap-2 pt-6">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary">
-                    {clip.voice}
-                    {(() => {
-                      const info = TTS_VOICE_INFO.find((v) => v.name === clip.voice);
-                      return info ? ` — ${info.gender}, ${info.tone}` : "";
-                    })()}
-                  </Badge>
-                  {clip.tag && <Badge variant="secondary">#{clip.tag}</Badge>}
-                  <span className="text-muted-foreground ml-auto text-xs">
-                    {new Date(clip.createdAt).toLocaleString("tr-TR")}
-                  </span>
-                </div>
-                <p className="text-muted-foreground line-clamp-2 text-sm">{clip.text}</p>
-                <div className="flex items-center gap-3">
-                  <audio src={clip.url} controls className="h-9 flex-1" />
-                  <a
-                    href={clip.url}
-                    download
-                    className="text-primary text-sm font-medium underline-offset-4 hover:underline"
-                  >
-                    İndir
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(clip.id)}
-                    className="text-destructive text-sm font-medium underline-offset-4 hover:underline"
-                  >
-                    Sil
-                  </button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="thin-scrollbar min-h-0 flex-1 overflow-y-auto p-3">
+          {generating && (
+            <div className="border-border/60 relative mb-2 overflow-hidden rounded-md border p-3">
+              <div className="igor-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent" />
+              <p className="relative text-sm font-medium">Üretiliyor</p>
+              <p className="text-muted-foreground relative mt-1 line-clamp-1 text-xs">{text}</p>
+              <div className="bg-foreground/10 absolute inset-x-0 bottom-0 h-0.5 overflow-hidden">
+                <div className="bg-primary igor-indeterminate absolute inset-y-0 w-[35%]" />
+              </div>
+            </div>
+          )}
+          {visibleClips.length === 0 && !generating ? (
+            <div className="text-muted-foreground flex h-full items-center justify-center text-center text-sm">
+              {clips.length === 0 ? "Henüz seslendirme üretmedin." : "Bu etikette henüz seslendirme yok."}
+            </div>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {visibleClips.map((clip) => {
+                const info = voiceInfo(clip.voice);
+                return (
+                  <li key={clip.id} className="border-border/60 hover:bg-muted/30 animate-in fade-in rounded-md border p-3 transition-colors">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge variant="secondary">{clip.voice}</Badge>
+                      {info && (
+                        <span className="text-muted-foreground text-xs">
+                          {info.gender}, {info.tone}
+                        </span>
+                      )}
+                      {clip.tag && <Badge variant="outline">#{clip.tag}</Badge>}
+                      <span className="text-muted-foreground ml-auto text-xs">
+                        {new Date(clip.createdAt).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" })}
+                      </span>
+                    </div>
+                    <p className="text-muted-foreground mt-1.5 line-clamp-2 text-sm">{clip.text}</p>
+                    <div className="mt-2 flex items-center gap-3">
+                      <audio src={clip.url} controls className="h-8 min-w-0 flex-1" />
+                      <a href={clip.url} download className="text-primary text-xs font-medium hover:underline">
+                        İndir
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(clip.id)}
+                        className="text-muted-foreground hover:text-destructive text-xs font-medium"
+                      >
+                        Sil
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
-      )}
+      </section>
     </main>
   );
 }

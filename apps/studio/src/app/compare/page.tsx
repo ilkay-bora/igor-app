@@ -2,29 +2,15 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Sparkles } from "lucide-react";
+import { RatioPicker } from "@/components/ratio-picker";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { FitImage } from "@/components/fit-image";
 import { FullscreenViewer } from "@/components/fullscreen-viewer";
 import {
-  RATIOS,
+  RATIO_OPTIONS,
   type Ratio,
   deleteGeneration,
   generateGeminiImage,
@@ -162,58 +148,48 @@ export default function ComparePage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-[1800px] flex-1 flex-col gap-8 px-6 py-10">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Görsel Üretim Karşılaştırma
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Aynı prompt&apos;u ücretli (API key gerekli) ve ücretsiz alternatiflerde aynı anda
-          dener, sonuçları yan yana karşılaştırır. Üretilen her görsel otomatik kaydedilir.
-        </p>
-      </header>
+    // Fills exactly one window: composer on top, the three results share the
+    // remaining height and each image is contained inside its own frame.
+    <main className="mx-auto flex h-[calc(100dvh-3.5rem)] w-full max-w-[1800px] flex-col gap-4 overflow-hidden px-6 py-5">
+      <div className="flex items-end justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold tracking-tight">Karşılaştır</h1>
+          <p className="text-muted-foreground mt-0.5 truncate text-sm">
+            Aynı prompt üç modelde aynı anda denenir, sonuçlar yan yana çıkar ve otomatik kaydedilir.
+          </p>
+        </div>
+      </div>
 
-      <Card>
-        <CardContent className="flex flex-col gap-4 pt-6">
-          <div className="space-y-2">
-            <Label htmlFor="prompt">Prompt</Label>
-            <Textarea
-              id="prompt"
-              placeholder="Örn: modern minimalist bir kahve dükkanı afişi, sıcak tonlar"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              rows={3}
-            />
-          </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleGenerate();
+        }}
+        className="bg-card ring-foreground/10 focus-within:ring-primary/40 shrink-0 rounded-lg ring-1 transition-shadow"
+      >
+        <textarea
+          placeholder="Ne oluşturmak istersin? Enter ile üç modelde birden üret."
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              handleGenerate();
+            }
+          }}
+          rows={2}
+          className="placeholder:text-muted-foreground thin-scrollbar block max-h-32 min-h-16 w-full resize-none bg-transparent px-4 pt-3.5 pb-1 text-base outline-none [field-sizing:content]"
+        />
+        <div className="flex flex-wrap items-center gap-2 p-2.5">
+          <RatioPicker compact label="Oran" options={RATIO_OPTIONS} value={ratio} onChange={(v) => setRatio(v as Ratio)} />
+          <Button type="submit" disabled={!prompt.trim()} className="ml-auto">
+            <Sparkles data-icon="inline-start" />
+            Hepsini Üret
+          </Button>
+        </div>
+      </form>
 
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="space-y-2">
-              <Label>En-boy oranı</Label>
-              <Select
-                value={ratio}
-                onValueChange={(value) => value && setRatio(value as Ratio)}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {RATIOS.map((r) => (
-                    <SelectItem key={r.value} value={r.value}>
-                      {r.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button onClick={handleGenerate} disabled={!prompt.trim()}>
-              Hepsini Üret
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-3">
         <ProviderCard
           title="Gemini (Nano Banana)"
           description="En yüksek kalite, ama Ayarlar'da Gemini API anahtarı ister."
@@ -295,16 +271,16 @@ function ProviderCard({
   onDelete?: () => void;
 }) {
   return (
-    <Card className="flex flex-col">
-      <CardHeader>
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-base">{title}</CardTitle>
-          <Badge variant={badgeVariant}>{badge}</Badge>
+    <section className="bg-card ring-foreground/10 flex min-h-0 flex-col gap-3 rounded-lg p-3 ring-1">
+      <div className="flex items-start justify-between gap-2 px-1 pt-0.5">
+        <div className="min-w-0">
+          <h2 className="truncate text-sm font-semibold">{title}</h2>
+          <p className="text-muted-foreground truncate text-xs">{description}</p>
         </div>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-1 flex-col gap-2">
-        <div className="bg-muted relative aspect-square w-full overflow-hidden rounded-md">
+        <Badge variant={badgeVariant}>{badge}</Badge>
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col gap-2">
+        <div className="bg-muted relative min-h-0 w-full flex-1 overflow-hidden rounded-md">
           <button
             type="button"
             onClick={onOpen}
@@ -317,13 +293,18 @@ function ProviderCard({
               </span>
             )}
             {state.status === "loading" && !state.url && (
-              <span className="text-muted-foreground text-sm animate-pulse">
-                Üretiliyor...
+              <span className="absolute inset-0 overflow-hidden">
+                <span className="bg-primary/30 igor-glow absolute top-1/2 left-1/2 size-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl" />
+                <span className="igor-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.07] to-transparent" />
+                <span className="relative flex h-full items-center justify-center text-sm font-medium">Üretiliyor</span>
+                <span className="bg-foreground/10 absolute inset-x-0 bottom-0 h-0.5 overflow-hidden">
+                  <span className="bg-primary igor-indeterminate absolute inset-y-0 w-[35%]" />
+                </span>
               </span>
             )}
             {state.url && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={state.url} alt={title} className="h-full w-full object-contain" />
+              <img src={state.url} alt={title} className="igor-reveal absolute inset-0 h-full w-full object-contain" />
             )}
             {state.status === "loading" && state.url && (
               <div className="bg-background/60 absolute inset-0 flex items-center justify-center">
@@ -359,7 +340,7 @@ function ProviderCard({
           )}
         </div>
         {state.status === "done" && (
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex shrink-0 items-center justify-end gap-3 px-1">
             {state.savedUrl ? (
               <a
                 href={state.savedUrl}
@@ -382,7 +363,7 @@ function ProviderCard({
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

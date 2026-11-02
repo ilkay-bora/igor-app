@@ -23,39 +23,37 @@ export function StartImageSettings({
   onStepsChange: (v: number) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-3">
-      <div className="min-w-56 space-y-1.5">
-        <span className="text-muted-foreground text-xs">Başlangıç görseli sağlayıcısı</span>
-        <Select value={provider} onValueChange={(v) => v && onProviderChange(v)}>
-          <SelectTrigger className="w-full">
-            <SelectValue />
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+      <Select value={provider} onValueChange={(v) => v && onProviderChange(v)}>
+        <SelectTrigger className="w-full min-w-0" aria-label="Başlangıç görseli sağlayıcısı">
+          <SelectValue>
+            {(v: string) => <span className="truncate">{SERVER_IMAGE_MODELS.find((m) => m.id === v)?.label ?? v}</span>}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent className="w-[22rem] max-w-[90vw]">
+          {SERVER_IMAGE_MODELS.map((m) => (
+            <SelectItem key={m.id} value={m.id}>
+              {m.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {provider === "comfy-flux-schnell" && (
+        <Select value={String(steps)} onValueChange={(v) => v && onStepsChange(Number(v))}>
+          <SelectTrigger className="w-40" aria-label="Kalite">
+            <SelectValue>
+              {(v: string) => <span className="truncate">{START_IMAGE_STEP_OPTIONS.find((o) => String(o.value) === v)?.label ?? v}</span>}
+            </SelectValue>
           </SelectTrigger>
-          <SelectContent className="w-[22rem] max-w-[90vw]">
-            {SERVER_IMAGE_MODELS.map((m) => (
-              <SelectItem key={m.id} value={m.id}>
-                {m.label}
+          <SelectContent>
+            {START_IMAGE_STEP_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={String(opt.value)}>
+                {opt.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-      </div>
-
-      {provider === "comfy-flux-schnell" && (
-        <div className="min-w-44 space-y-1.5">
-          <span className="text-muted-foreground text-xs">Kalite</span>
-          <Select value={String(steps)} onValueChange={(v) => v && onStepsChange(Number(v))}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {START_IMAGE_STEP_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={String(opt.value)}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
       )}
     </div>
   );

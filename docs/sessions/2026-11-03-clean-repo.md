@@ -51,3 +51,10 @@
 - `/setup` first-run screen and `/settings` page share `SettingsForm`. `SetupGate` in the root layout sends an install without `setupDone` to `/setup` once.
 - Nav rebuilt at a fixed h-14: Oluştur, Editör, Video, Seslendirme, Karşılaştır with icons and a red underline for the active page; Hatalar and Ayarlar as icon buttons on the right. Editor and create-page height calcs updated to 3.5rem.
 - Testing note: don't open `/video/editor` from a headless browser, its autosave writes `data/editor-draft.json`.
+
+## Video, Seslendirme, Karşılaştır on one screen (same day)
+
+- All three pages now fill exactly one window (`h-[calc(100dvh-3.5rem)]`), scrolling only inside their panels. Verified at 1600x1000: no page scroll on any of them.
+- Video: settings panel on the left (prompt + preset chips, compact ratio, style select, 3/5/8 sn segmented duration, switch toggles, dashed image picker, submit pinned at the bottom; multi-scene mode uses the same pieces), grid of 16:9 video cards on the right. Thumbnails show the first frame (`#t=0.1`, `preload="metadata"`) and only play on hover; previously every video autoplayed at once. `StartImageSettings` is a compact two-select row showing labels instead of raw ids.
+- Seslendirme: full-height writer on the left (text, tone chips + custom instruction, voice select with gender/tone, preview, tag, Üret), clip library on the right with a generating placeholder.
+- Karşılaştır: create-style composer (Enter submits, compact ratio picker), the three result frames share the remaining height with contained images and the same generating/reveal motion as Oluştur.

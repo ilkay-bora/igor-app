@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState, type ChangeEvent } from "react";
 import Link from "next/link";
-import { Loader2, Plus, X } from "lucide-react";
+import { Film, ImagePlus, Loader2, Maximize2, Plus, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
 import { RatioPicker } from "@/components/ratio-picker";
 import { Badge } from "@/components/ui/badge";
 import { FullscreenViewer } from "@/components/fullscreen-viewer";
@@ -274,602 +273,362 @@ export default function VideoPage() {
     await loadProjects();
   }
 
+  const activeCount = jobs.filter((j) => j.status === "queued" || j.status === "running").length;
+
   return (
-    <main className="mx-auto flex w-full max-w-[1800px] flex-1 flex-col gap-6 px-6 py-10">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Video (Yerel — LTX-2.3)</h1>
-        <p className="text-muted-foreground text-sm">
-          Sunucu tarafında sırayla çalışır: sayfadan çıksan da devam eder. Bu donanımda video
-          başına ~7 dakika (5sn/1280x720) sürüyor.{" "}
-          <Link href="/debug" className="text-primary underline-offset-4 hover:underline">
-            Hatalar
-          </Link>{" "}
-          sayfasından başarısız denemeleri görebilirsin.
-        </p>
-      </header>
+    // One window like the editor: settings panel on the left (scrolls inside,
+    // submit pinned to its bottom), queue and finished videos on the right.
+    <main className="mx-auto grid h-[calc(100dvh-3.5rem)] w-full max-w-[1800px] grid-cols-1 gap-4 overflow-hidden px-6 py-5 lg:grid-cols-[minmax(380px,460px)_minmax(0,1fr)]">
+      <section className="bg-card ring-foreground/10 flex min-h-0 flex-col rounded-lg ring-1">
+        <div className="border-border/60 flex items-center justify-between gap-3 border-b px-4 py-3">
+          <div className="min-w-0">
+            <h1 className="text-base font-semibold">Video</h1>
+            <p className="text-muted-foreground truncate text-xs">Yerel LTX-2.3, sırayla arka planda üretilir</p>
+          </div>
+          <div className="bg-muted/60 inline-flex h-9 shrink-0 gap-0.5 rounded-md p-0.5">
+            {(
+              [
+                ["single", "Tek video"],
+                ["project", "Çoklu sahne"],
+              ] as const
+            ).map(([m, label]) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                className={cn(
+                  "rounded-[5px] px-3 text-xs font-semibold transition-colors",
+                  mode === m ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      <div className="bg-muted flex w-fit items-center gap-1 rounded-lg p-1">
-        <button
-          type="button"
-          onClick={() => setMode("single")}
-          className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
-            mode === "single" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Tek Video
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode("project")}
-          className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
-            mode === "project" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Çoklu Sahne (Proje)
-        </button>
-      </div>
-
-      {mode === "single" ? (
-        <Card>
-          <CardContent className="flex flex-col gap-4 pt-6">
-            <Textarea
-              placeholder="Ne oluşturmak istersin? Örn: a cat walking on a beach at sunset, photorealistic, cinematic"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              rows={3}
-              className="resize-none text-base"
-            />
-
-            <div className="flex flex-wrap gap-2">
-              {VIDEO_PRESET_PROMPTS.map((text) => (
-                <button
-                  key={text}
-                  type="button"
-                  onClick={() => setPrompt(text)}
-                  className="border-input hover:bg-accent max-w-64 truncate rounded-md border px-3 py-1 text-xs transition-colors"
-                  title={text}
-                >
-                  {text}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="min-w-40 space-y-1.5">
-                <span className="text-muted-foreground text-xs">Stil</span>
-                <Select
-                  value={styleId}
-                  onValueChange={(v) => {
-                    if (!v) return;
-                    setStyleId(v);
-                    if (v === "anime") setUseStartImage(true);
-                  }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VIDEO_STYLES.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <RatioPicker label="Çözünürlük" options={VIDEO_RESOLUTION_OPTIONS} value={resolution} onChange={setResolution} />
-
-              <div className="min-w-32 space-y-1.5">
-                <span className="text-muted-foreground text-xs">Süre</span>
-                <Select value={String(duration)} onValueChange={(v) => v && setDuration(Number(v))}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VIDEO_DURATIONS.map((d) => (
-                      <SelectItem key={d} value={String(d)}>
-                        {d} saniye
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button onClick={handleGenerate} disabled={!prompt.trim()} className="ml-auto">
-                Kuyruğa Ekle
-              </Button>
-            </div>
-
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={useStartImage}
-                onChange={(e) => setUseStartImage(e.target.checked)}
-                className="size-4"
-              />
-              Önce görsel üret, sonra canlandır
-              <span className="text-muted-foreground text-xs">
-                (standart mod — stil çok daha iyi korunur, ~1 dk ekstra sürer)
-              </span>
-            </label>
-
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={generateAudio}
-                onChange={(e) => setGenerateAudio(e.target.checked)}
-                className="size-4"
-              />
-              Ses üret
-              <span className="text-muted-foreground text-xs">
-                (kapatırsan video sessiz çıkar — üretim süresi neredeyse aynı kalır, model sesi
-                yine de dahili olarak üretiyor)
-              </span>
-            </label>
-
-            {useStartImage && !refImageDataUrl && (
-              <StartImageSettings
-                provider={startImageProvider}
-                onProviderChange={setStartImageProvider}
-                steps={startImageSteps}
-                onStepsChange={setStartImageSteps}
-              />
-            )}
-
-            <div className="flex items-center gap-3">
-              <label className="text-muted-foreground text-xs">
-                Kendi referans görselini yükle (opsiyonel, yüklersen otomatik görsel üretimi atlanır)
-              </label>
-              <input type="file" accept="image/*" onChange={handleFileChange} className="text-xs" />
-              {refImageDataUrl && (
-                <div className="flex items-center gap-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={refImageDataUrl}
-                    alt="referans görsel"
-                    className="h-12 w-12 rounded object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setRefImageDataUrl(null)}
-                    className="text-destructive text-xs underline-offset-4 hover:underline"
-                  >
-                    Kaldır
-                  </button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="flex flex-col gap-5 pt-6">
-            <p className="text-muted-foreground text-sm">
-              Her sahne kendi prompt&apos;u, stili, süresi ve başlangıç görseli sağlayıcısıyla ayrı
-              ayrı üretilir; hepsi bitince tek video halinde art arda (kesmeli geçiş) birleştirilir.
-            </p>
-
-            <div className="border-border bg-muted/30 space-y-3 rounded-lg border p-4">
-              <div className="space-y-1">
-                <h3 className="text-sm font-medium">Karakter tutarlılığı (opsiyonel)</h3>
-                <p className="text-muted-foreground text-xs">
-                  Bir kez karakter/stil tarifi girip referans görsel üret — tüm sahneler bu
-                  referansa ve aynı seed&apos;e koşullanarak üretilir, karakter tasarımı sahne sahne
-                  değişmez.
-                </p>
-              </div>
-
-              <Textarea
-                placeholder="Karakter ve stil tarifi, örn: küçük yuvarlak kulaklı kızıl bir tilki yavrusu, mavi tulum, iri gözler"
-                value={characterDescription}
-                onChange={(e) => setCharacterDescription(e.target.value)}
-                rows={2}
-                className="resize-none text-sm"
-              />
-
-              <div className="min-w-48 space-y-1.5">
-                <span className="text-muted-foreground text-xs">Görsel sağlayıcı</span>
-                <Select
-                  value={referenceProvider}
-                  onValueChange={(v) => v && setReferenceProvider(v as "gemini" | "comfy-flux-schnell")}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gemini">Gemini — Nano Banana</SelectItem>
-                    <SelectItem value="comfy-flux-schnell">ComfyUI (Yerel) — FLUX schnell</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={handleGenerateReference}
-                  disabled={!characterDescription.trim() || referenceGenerating}
-                >
-                  {referenceGenerating && <Loader2 className="size-4 animate-spin" />}
-                  {referenceImageUrl ? "Yeniden Oluştur" : "Referans Görsel Oluştur"}
-                </Button>
-
-                {referenceImageUrl && (
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={referenceImageUrl}
-                      alt="karakter referansı"
-                      className="h-16 w-16 rounded object-cover"
-                    />
+        <div className="thin-scrollbar flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-4">
+          {mode === "single" ? (
+            <>
+              <div className="border-input focus-within:border-ring rounded-md border transition-colors">
+                <textarea
+                  placeholder="Ne olsun? Örn: a cat walking on a beach at sunset, cinematic"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  rows={4}
+                  className="placeholder:text-muted-foreground thin-scrollbar block w-full resize-none bg-transparent px-3 pt-3 pb-2 text-sm leading-relaxed outline-none"
+                />
+                <div className="flex flex-wrap gap-1.5 px-2.5 pb-2.5">
+                  {VIDEO_PRESET_PROMPTS.map((text) => (
                     <button
+                      key={text}
                       type="button"
-                      onClick={() => {
-                        setReferenceImageUrl(null);
-                        setReferenceSeed(null);
-                      }}
-                      className="text-destructive text-xs underline-offset-4 hover:underline"
+                      onClick={() => setPrompt(text)}
+                      className="bg-muted/70 text-muted-foreground hover:text-foreground hover:bg-muted max-w-48 truncate rounded-sm px-2 py-0.5 text-[11px] transition-colors"
+                      title={text}
                     >
-                      Kaldır
+                      {text}
                     </button>
+                  ))}
+                </div>
+              </div>
+
+              <Group label="Görüntü">
+                <RatioPicker compact label="Çözünürlük" options={VIDEO_RESOLUTION_OPTIONS} value={resolution} onChange={setResolution} />
+                <div className="grid grid-cols-2 gap-2">
+                  <StyleSelect
+                    value={styleId}
+                    onChange={(v) => {
+                      setStyleId(v);
+                      if (v === "anime") setUseStartImage(true);
+                    }}
+                  />
+                  <DurationPicker value={duration} onChange={setDuration} />
+                </div>
+              </Group>
+
+              <Group label="Seçenekler">
+                <ToggleRow
+                  checked={useStartImage}
+                  onChange={setUseStartImage}
+                  title="Önce görsel üret, sonra canlandır"
+                  hint="Stil çok daha iyi korunur, yaklaşık 1 dk ekler"
+                />
+                {useStartImage && !refImageDataUrl && (
+                  <div className="pl-12">
+                    <StartImageSettings
+                      provider={startImageProvider}
+                      onProviderChange={setStartImageProvider}
+                      steps={startImageSteps}
+                      onStepsChange={setStartImageSteps}
+                    />
                   </div>
                 )}
-              </div>
+                <ToggleRow
+                  checked={generateAudio}
+                  onChange={setGenerateAudio}
+                  title="Ses üret"
+                  hint="Kapatırsan video sessiz çıkar, süre neredeyse aynı kalır"
+                />
+              </Group>
 
-              {referenceError && <p className="text-destructive text-xs">{referenceError}</p>}
+              <Group label="Başlangıç görseli">
+                <ImagePick
+                  value={refImageDataUrl}
+                  onPick={handleFileChange}
+                  onClear={() => setRefImageDataUrl(null)}
+                  hint="Kendi görselini yüklersen otomatik görsel üretimi atlanır"
+                />
+              </Group>
+            </>
+          ) : (
+            <>
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                Her sahne ayrı üretilir, hepsi bitince tek video halinde art arda birleştirilir.
+              </p>
 
-              <div className="min-w-48 space-y-1.5">
-                <span className="text-muted-foreground text-xs">Hareket yoğunluğu (tüm sahneler)</span>
+              <Group label="Görüntü (tüm sahneler)">
+                <RatioPicker compact label="Çözünürlük" options={VIDEO_RESOLUTION_OPTIONS} value={resolution} onChange={setResolution} />
                 <Select value={motionLevel} onValueChange={(v) => v && setMotionLevel(v as "normal" | "dusuk")}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
+                  <SelectTrigger className="w-full" aria-label="Hareket yoğunluğu">
+                    <SelectValue>{(v: string) => (v === "dusuk" ? "Hareket: düşük (masal kitabı)" : "Hareket: normal")}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="normal">Normal</SelectItem>
                     <SelectItem value="dusuk">Düşük (Masal Kitabı)</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-            </div>
+              </Group>
 
-            {scenes.map((scene, i) => (
-              <div key={scene.key} className="border-border space-y-3 rounded-lg border p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Sahne {i + 1}</span>
-                  {scenes.length > 2 && (
-                    <button
-                      type="button"
-                      onClick={() => removeScene(scene.key)}
-                      className="text-muted-foreground hover:text-destructive"
-                      aria-label="Sahneyi kaldır"
-                    >
-                      <X className="size-4" />
-                    </button>
-                  )}
-                </div>
-
-                <Textarea
-                  placeholder="Bu sahnede ne olsun? (anlatım/diyalog buraya, video hareketi için)"
-                  value={scene.prompt}
-                  onChange={(e) => updateScene(scene.key, { prompt: e.target.value })}
+              <Group label="Karakter tutarlılığı" badge="Opsiyonel">
+                <p className="text-muted-foreground -mt-1 text-xs leading-relaxed">
+                  Bir referans görsel üret, bütün sahneler aynı karaktere ve aynı seed&apos;e bağlı kalsın.
+                </p>
+                <textarea
+                  placeholder="Örn: küçük yuvarlak kulaklı kızıl bir tilki yavrusu, mavi tulum, iri gözler"
+                  value={characterDescription}
+                  onChange={(e) => setCharacterDescription(e.target.value)}
                   rows={2}
-                  className="resize-none text-sm"
+                  className={cn(fieldClass, "h-auto resize-none py-2")}
                 />
-
+                <div className="flex gap-2">
+                  <Select
+                    value={referenceProvider}
+                    onValueChange={(v) => v && setReferenceProvider(v as "gemini" | "comfy-flux-schnell")}
+                  >
+                    <SelectTrigger className="min-w-0 flex-1" aria-label="Görsel sağlayıcı">
+                      <SelectValue>{(v: string) => (v === "gemini" ? "Gemini, Nano Banana" : "ComfyUI, FLUX schnell")}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gemini">Gemini, Nano Banana</SelectItem>
+                      <SelectItem value="comfy-flux-schnell">ComfyUI (Yerel), FLUX schnell</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGenerateReference}
+                    disabled={!characterDescription.trim() || referenceGenerating}
+                  >
+                    {referenceGenerating && <Loader2 className="animate-spin" data-icon="inline-start" />}
+                    {referenceImageUrl ? "Yenile" : "Oluştur"}
+                  </Button>
+                </div>
                 {referenceImageUrl && (
-                  <Textarea
-                    placeholder="Sahne görseli — sadece ne görünsün (kısa, sade, diyalog yok). Boşsa üstteki metin kullanılır."
-                    value={scene.imageVisual}
-                    onChange={(e) => updateScene(scene.key, { imageVisual: e.target.value })}
+                  <div className="flex items-center gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={referenceImageUrl} alt="karakter referansı" className="igor-reveal size-16 rounded-md object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReferenceImageUrl(null);
+                        setReferenceSeed(null);
+                      }}
+                      className="text-muted-foreground hover:text-destructive text-xs"
+                    >
+                      Kaldır
+                    </button>
+                  </div>
+                )}
+                {referenceError && <p className="text-destructive text-xs">{referenceError}</p>}
+              </Group>
+
+              {scenes.map((scene, i) => (
+                <div key={scene.key} className="border-border/70 flex flex-col gap-3 rounded-md border p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold">Sahne {i + 1}</span>
+                    {scenes.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => removeScene(scene.key)}
+                        className="text-muted-foreground hover:text-destructive"
+                        aria-label="Sahneyi kaldır"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    )}
+                  </div>
+                  <textarea
+                    placeholder="Bu sahnede ne olsun? (hareket, anlatım, diyalog)"
+                    value={scene.prompt}
+                    onChange={(e) => updateScene(scene.key, { prompt: e.target.value })}
                     rows={2}
-                    className="resize-none text-sm"
+                    className={cn(fieldClass, "h-auto resize-none py-2")}
                   />
-                )}
-
-                <div className="flex flex-wrap items-end gap-3">
-                  <div className="min-w-40 space-y-1.5">
-                    <span className="text-muted-foreground text-xs">Stil</span>
-                    <Select
-                      value={scene.styleId}
-                      onValueChange={(v) => v && updateScene(scene.key, { styleId: v })}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {VIDEO_STYLES.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  {referenceImageUrl && (
+                    <textarea
+                      placeholder="Sahne görseli: sadece ne görünsün (kısa, diyalog yok). Boşsa üstteki metin kullanılır."
+                      value={scene.imageVisual}
+                      onChange={(e) => updateScene(scene.key, { imageVisual: e.target.value })}
+                      rows={2}
+                      className={cn(fieldClass, "h-auto resize-none py-2")}
+                    />
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <StyleSelect value={scene.styleId} onChange={(v) => updateScene(scene.key, { styleId: v })} />
+                    <DurationPicker value={scene.duration} onChange={(v) => updateScene(scene.key, { duration: v })} />
                   </div>
-
-                  <div className="min-w-32 space-y-1.5">
-                    <span className="text-muted-foreground text-xs">Süre</span>
-                    <Select
-                      value={String(scene.duration)}
-                      onValueChange={(v) => v && updateScene(scene.key, { duration: Number(v) })}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {VIDEO_DURATIONS.map((d) => (
-                          <SelectItem key={d} value={String(d)}>
-                            {d} saniye
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <label className="flex items-center gap-2 text-xs">
-                  <input
-                    type="checkbox"
+                  <ToggleRow
                     checked={scene.useStartImage}
-                    onChange={(e) => updateScene(scene.key, { useStartImage: e.target.checked })}
-                    className="size-4"
+                    onChange={(v) => updateScene(scene.key, { useStartImage: v })}
+                    title="Önce görsel üret, sonra canlandır"
                   />
-                  Önce görsel üret, sonra canlandır
-                </label>
-
-                <label className="flex items-center gap-2 text-xs">
-                  <input
-                    type="checkbox"
-                    checked={scene.generateAudio}
-                    onChange={(e) => updateScene(scene.key, { generateAudio: e.target.checked })}
-                    className="size-4"
-                  />
-                  Ses üret
-                </label>
-
-                {scene.useStartImage && !scene.refImageDataUrl && !referenceImageUrl && (
-                  <StartImageSettings
-                    provider={scene.startImageProvider}
-                    onProviderChange={(v) => updateScene(scene.key, { startImageProvider: v })}
-                    steps={scene.startImageSteps}
-                    onStepsChange={(v) => updateScene(scene.key, { startImageSteps: v })}
-                  />
-                )}
-                {scene.useStartImage && !scene.refImageDataUrl && referenceImageUrl && (
-                  <p className="text-muted-foreground text-xs">
-                    Karakter referansı aktif — bu sahne{" "}
-                    {referenceProvider === "gemini" ? "Gemini" : "ComfyUI (yerel FLUX)"} ile referansa
-                    koşullanarak üretilecek.
-                  </p>
-                )}
-
-                <div className="flex items-center gap-3">
-                  <label className="text-muted-foreground text-xs">
-                    Kendi referans görselini yükle (opsiyonel)
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => sceneFileChange(scene.key, e)}
-                    className="text-xs"
-                  />
-                  {scene.refImageDataUrl && (
-                    <div className="flex items-center gap-2">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={scene.refImageDataUrl}
-                        alt="referans görsel"
-                        className="h-10 w-10 rounded object-cover"
+                  {scene.useStartImage && !scene.refImageDataUrl && !referenceImageUrl && (
+                    <div className="pl-12">
+                      <StartImageSettings
+                        provider={scene.startImageProvider}
+                        onProviderChange={(v) => updateScene(scene.key, { startImageProvider: v })}
+                        steps={scene.startImageSteps}
+                        onStepsChange={(v) => updateScene(scene.key, { startImageSteps: v })}
                       />
-                      <button
-                        type="button"
-                        onClick={() => updateScene(scene.key, { refImageDataUrl: null })}
-                        className="text-destructive text-xs underline-offset-4 hover:underline"
-                      >
-                        Kaldır
-                      </button>
                     </div>
                   )}
+                  {scene.useStartImage && !scene.refImageDataUrl && referenceImageUrl && (
+                    <p className="text-muted-foreground pl-12 text-xs">
+                      Karakter referansına bağlı, {referenceProvider === "gemini" ? "Gemini" : "yerel FLUX"} ile üretilecek.
+                    </p>
+                  )}
+                  <ToggleRow
+                    checked={scene.generateAudio}
+                    onChange={(v) => updateScene(scene.key, { generateAudio: v })}
+                    title="Ses üret"
+                  />
+                  <ImagePick
+                    value={scene.refImageDataUrl}
+                    onPick={(e) => sceneFileChange(scene.key, e)}
+                    onClear={() => updateScene(scene.key, { refImageDataUrl: null })}
+                  />
                 </div>
-              </div>
-            ))}
+              ))}
 
-            <Button
-              variant="secondary"
-              onClick={addScene}
-              disabled={scenes.length >= MAX_SCENES}
-              className="w-fit"
-            >
-              <Plus className="size-4" />
-              Sahne Ekle
-            </Button>
-
-            <div className="flex flex-wrap items-end gap-3 border-t border-border pt-4">
-              <RatioPicker label="Çözünürlük (tüm sahneler)" options={VIDEO_RESOLUTION_OPTIONS} value={resolution} onChange={setResolution} />
-
-              <Button onClick={handleGenerateProject} disabled={!scenesReady} className="ml-auto">
-                Projeyi Kuyruğa Ekle ({scenes.length} sahne)
+              <Button variant="outline" onClick={addScene} disabled={scenes.length >= MAX_SCENES}>
+                <Plus data-icon="inline-start" />
+                Sahne ekle
               </Button>
+            </>
+          )}
+        </div>
+
+        <div className="border-border/60 border-t p-3">
+          {mode === "single" ? (
+            <Button onClick={handleGenerate} disabled={!prompt.trim()} size="lg" className="w-full">
+              <Film data-icon="inline-start" />
+              Kuyruğa ekle
+            </Button>
+          ) : (
+            <Button onClick={handleGenerateProject} disabled={!scenesReady} size="lg" className="w-full">
+              <Film data-icon="inline-start" />
+              Projeyi kuyruğa ekle ({scenes.length} sahne)
+            </Button>
+          )}
+        </div>
+      </section>
+
+      <section className="bg-card ring-foreground/10 flex min-h-0 flex-col rounded-lg ring-1">
+        <div className="border-border/60 flex flex-wrap items-center gap-3 border-b px-4 py-3">
+          <h2 className="text-sm font-semibold">Videolar</h2>
+          <span className="text-muted-foreground text-xs">
+            {jobs.length} video{projects.length > 0 && `, ${projects.length} proje`}
+          </span>
+          {activeCount > 0 && (
+            <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+              <Loader2 className="text-primary size-3.5 animate-spin" />
+              {activeCount} sırada
+            </span>
+          )}
+          <span className="text-muted-foreground ml-auto hidden text-xs xl:inline">
+            5 sn 1280×720 video yaklaşık 7 dk sürer. Başarısız denemeler{" "}
+            <Link href="/debug" className="text-primary hover:underline">
+              Hatalar
+            </Link>
+            &apos;da.
+          </span>
+        </div>
+
+        <div className="thin-scrollbar min-h-0 flex-1 overflow-y-auto p-4">
+          {jobs.length === 0 && projects.length === 0 ? (
+            <div className="text-muted-foreground flex h-full items-center justify-center text-center text-sm">
+              Henüz video yok. Soldan bir prompt yazıp kuyruğa ekle.
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {projects.length > 0 && (
-        <div className="flex flex-col gap-4">
-          <h2 className="text-lg font-semibold tracking-tight">Projeler</h2>
-          {projects.map((project) => {
-            const sceneJobs = project.sceneJobIds
-              .map((jid) => jobs.find((j) => j.id === jid))
-              .filter((j): j is VideoJob => !!j);
-            const doneCount = sceneJobs.filter((j) => j.status === "done").length;
-
-            return (
-              <Card key={project.id}>
-                <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row">
-                  <div className="bg-muted flex aspect-video w-full shrink-0 items-center justify-center overflow-hidden rounded-md sm:w-64">
-                    {project.status === "running" && (
-                      <div className="flex flex-col items-center gap-2">
-                        <Loader2 className="text-primary size-6 animate-spin" />
-                        <span className="text-muted-foreground text-xs">
-                          {doneCount}/{project.sceneCount} sahne tamamlandı
-                        </span>
-                        <ElapsedTimer since={project.createdAt} />
-                      </div>
-                    )}
-                    {project.status === "error" && (
-                      <span className="text-destructive line-clamp-4 p-3 text-center text-xs">
-                        {project.error}
-                      </span>
-                    )}
-                    {project.status === "done" && project.finalUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setFullscreenUrl({ url: project.finalUrl!, kind: "video" })}
-                        className="h-full w-full"
-                      >
-                        <video
-                          src={project.finalUrl}
-                          muted
-                          loop
-                          autoPlay
-                          className="h-full w-full object-cover"
-                        />
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex flex-1 flex-col gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge>Proje</Badge>
-                      <Badge variant="secondary">{project.sceneCount} sahne</Badge>
-                      <span className="text-muted-foreground ml-auto text-xs">
-                        {new Date(project.createdAt).toLocaleString("tr-TR")}
-                      </span>
-                    </div>
-                    <div className="mt-auto flex items-center gap-3">
-                      {project.status === "done" && project.finalUrl && (
-                        <a
-                          href={project.finalUrl}
-                          download
-                          className="text-primary text-sm font-medium underline-offset-4 hover:underline"
-                        >
-                          İndir
-                        </a>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteProject(project.id)}
-                        className="text-destructive text-sm font-medium underline-offset-4 hover:underline"
-                      >
-                        Sil
-                      </button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {jobs.length === 0 ? (
-        <div className="text-muted-foreground flex flex-1 items-center justify-center py-24 text-center text-sm">
-          Henüz video üretmedin. Bir prompt yaz ve &quot;Kuyruğa Ekle&quot;ye bas.
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {jobs.map((job) => (
-            <Card key={job.id}>
-              <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row">
-                <div className="bg-muted flex aspect-video w-full shrink-0 items-center justify-center overflow-hidden rounded-md sm:w-64">
-                  {job.status === "queued" && (
-                    <div className="flex flex-col items-center gap-2">
-                      <span className="text-muted-foreground text-xs">Kuyrukta...</span>
-                      <ElapsedTimer since={job.createdAt} />
-                    </div>
-                  )}
-                  {job.status === "running" && (
-                    <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="text-primary size-6 animate-spin" />
-                      <span className="text-muted-foreground text-xs">Üretiliyor...</span>
-                      <ElapsedTimer since={job.createdAt} />
-                    </div>
-                  )}
-                  {job.status === "error" && (
-                    <span className="text-destructive line-clamp-4 p-3 text-center text-xs">
-                      {job.error}
-                    </span>
-                  )}
-                  {job.status === "done" && job.url && (
-                    <button
-                      type="button"
-                      onClick={() => setFullscreenUrl({ url: job.url!, kind: "video" })}
-                      className="h-full w-full"
-                    >
-                      <video src={job.url} muted loop autoPlay className="h-full w-full object-cover" />
-                    </button>
-                  )}
-                </div>
-                <div className="flex flex-1 flex-col gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {job.projectId && <Badge variant="secondary">Proje sahnesi {(job.sceneIndex ?? 0) + 1}</Badge>}
-                    <Badge variant="secondary">
-                      {job.width}x{job.height}
-                    </Badge>
-                    <Badge variant="secondary">{job.durationSeconds}s</Badge>
-                    {job.status === "done" && job.ms !== undefined && (
-                      <Badge variant="secondary">{(job.ms / 60000).toFixed(1)} dk</Badge>
-                    )}
-                    {job.startImageFallback && (
-                      <Badge variant="destructive">
-                        ⚠ görsel üretilemedi, sadece metinden üretildi
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+              {projects.map((project) => {
+                const sceneJobs = project.sceneJobIds
+                  .map((jid) => jobs.find((j) => j.id === jid))
+                  .filter((j): j is VideoJob => !!j);
+                const doneCount = sceneJobs.filter((j) => j.status === "done").length;
+                return (
+                  <MediaCard
+                    key={project.id}
+                    status={project.status === "running" ? "running" : project.status === "error" ? "error" : "done"}
+                    url={project.finalUrl}
+                    error={project.error}
+                    since={project.createdAt}
+                    progressLabel={`${doneCount}/${project.sceneCount} sahne`}
+                    onOpen={() => project.finalUrl && setFullscreenUrl({ url: project.finalUrl, kind: "video" })}
+                    onDelete={() => handleDeleteProject(project.id)}
+                    meta={
+                      <>
+                        <Badge>Proje</Badge>
+                        <Badge variant="secondary">{project.sceneCount} sahne</Badge>
+                      </>
+                    }
+                    createdAt={project.createdAt}
+                  />
+                );
+              })}
+              {jobs.map((job) => (
+                <MediaCard
+                  key={job.id}
+                  status={job.status}
+                  url={job.url}
+                  error={job.error}
+                  since={job.createdAt}
+                  onOpen={() => job.url && setFullscreenUrl({ url: job.url, kind: "video" })}
+                  onDelete={() => handleDelete(job.id)}
+                  prompt={job.prompt}
+                  startImageUrl={job.startImageUrl}
+                  onOpenStartImage={() => job.startImageUrl && setFullscreenUrl({ url: job.startImageUrl, kind: "image" })}
+                  createdAt={job.createdAt}
+                  meta={
+                    <>
+                      {job.projectId && <Badge variant="secondary">Sahne {(job.sceneIndex ?? 0) + 1}</Badge>}
+                      <Badge variant="secondary">
+                        {job.width}×{job.height}
                       </Badge>
-                    )}
-                    <span className="text-muted-foreground ml-auto text-xs">
-                      {new Date(job.createdAt).toLocaleString("tr-TR")}
-                    </span>
-                  </div>
-                  {job.startImageUrl && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground text-xs">Referans görsel:</span>
-                      <button
-                        type="button"
-                        onClick={() => setFullscreenUrl({ url: job.startImageUrl!, kind: "image" })}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={job.startImageUrl}
-                          alt="referans görsel"
-                          className="h-12 w-12 rounded object-cover"
-                        />
-                      </button>
-                    </div>
-                  )}
-                  <p className="text-muted-foreground line-clamp-2 text-sm">{job.prompt}</p>
-                  <div className="mt-auto flex items-center gap-3">
-                    {job.status === "done" && job.url && (
-                      <a
-                        href={job.url}
-                        download
-                        className="text-primary text-sm font-medium underline-offset-4 hover:underline"
-                      >
-                        İndir
-                      </a>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(job.id)}
-                      className="text-destructive text-sm font-medium underline-offset-4 hover:underline"
-                    >
-                      Sil
-                    </button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                      <Badge variant="secondary">{job.durationSeconds} sn</Badge>
+                      {job.status === "done" && job.ms !== undefined && job.ms > 0 && (
+                        <Badge variant="secondary">{(job.ms / 60000).toFixed(1)} dk</Badge>
+                      )}
+                      {job.startImageFallback && <Badge variant="destructive">görsel üretilemedi, metinden</Badge>}
+                    </>
+                  }
+                />
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </section>
 
       {fullscreenUrl && (
         <FullscreenViewer
@@ -880,5 +639,245 @@ export default function VideoPage() {
         />
       )}
     </main>
+  );
+}
+
+const fieldClass =
+  "border-input placeholder:text-muted-foreground focus-visible:border-ring dark:bg-input/20 h-9 w-full rounded-md border bg-transparent px-3 text-sm outline-none transition-colors";
+
+function Group({ label, badge, children }: { label: string; badge?: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-2.5">
+      <div className="flex items-center gap-2">
+        <span className="text-muted-foreground text-[11px] font-semibold tracking-wide uppercase">{label}</span>
+        {badge && <span className="bg-muted text-muted-foreground rounded-sm px-1.5 py-0.5 text-[10px]">{badge}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function StyleSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <Select value={value} onValueChange={(v) => v && onChange(v)}>
+      <SelectTrigger className="w-full min-w-0" aria-label="Stil">
+        <SelectValue>
+          {(v: string) => {
+            const s = VIDEO_STYLES.find((st) => st.id === v);
+            return <span className="truncate">Stil: {s && s.id !== "none" ? s.label : "yok"}</span>;
+          }}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {VIDEO_STYLES.map((s) => (
+          <SelectItem key={s.id} value={s.id}>
+            {s.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function DurationPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div role="radiogroup" aria-label="Süre" className="bg-muted/60 grid h-9 grid-flow-col gap-0.5 rounded-md p-0.5">
+      {VIDEO_DURATIONS.map((d) => (
+        <button
+          key={d}
+          type="button"
+          role="radio"
+          aria-checked={value === d}
+          onClick={() => onChange(d)}
+          className={cn(
+            "rounded-[5px] text-xs font-semibold tabular-nums transition-colors",
+            value === d ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          {d} sn
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ToggleRow({
+  checked,
+  onChange,
+  title,
+  hint,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  title: string;
+  hint?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="group flex w-full items-start gap-3 text-left"
+    >
+      <span
+        className={cn(
+          "relative mt-0.5 inline-block h-5 w-9 shrink-0 rounded-full transition-colors",
+          checked ? "bg-primary" : "bg-input group-hover:bg-muted-foreground/40"
+        )}
+      >
+        <span
+          className={cn(
+            "absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow-sm transition-transform",
+            checked && "translate-x-4"
+          )}
+        />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm">{title}</span>
+        {hint && <span className="text-muted-foreground block text-xs">{hint}</span>}
+      </span>
+    </button>
+  );
+}
+
+function ImagePick({
+  value,
+  onPick,
+  onClear,
+  hint,
+}: {
+  value: string | null;
+  onPick: (e: ChangeEvent<HTMLInputElement>) => void;
+  onClear: () => void;
+  hint?: string;
+}) {
+  if (value) {
+    return (
+      <div className="border-border/70 flex items-center gap-3 rounded-md border p-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={value} alt="başlangıç görseli" className="size-12 rounded-sm object-cover" />
+        <span className="text-muted-foreground min-w-0 flex-1 text-xs">Bu görsel canlandırılacak</span>
+        <button type="button" onClick={onClear} className="text-muted-foreground hover:text-destructive px-2 text-xs">
+          Kaldır
+        </button>
+      </div>
+    );
+  }
+  return (
+    <label className="border-input hover:border-ring hover:bg-muted/30 flex cursor-pointer items-center gap-3 rounded-md border border-dashed px-3 py-2.5 transition-colors">
+      <ImagePlus className="text-muted-foreground size-4 shrink-0" />
+      <span className="min-w-0">
+        <span className="block text-sm">Görsel yükle</span>
+        {hint && <span className="text-muted-foreground block text-xs">{hint}</span>}
+      </span>
+      <input type="file" accept="image/*" onChange={onPick} className="sr-only" />
+    </label>
+  );
+}
+
+function MediaCard({
+  status,
+  url,
+  error,
+  since,
+  progressLabel,
+  prompt,
+  startImageUrl,
+  onOpenStartImage,
+  meta,
+  createdAt,
+  onOpen,
+  onDelete,
+}: {
+  status: "queued" | "running" | "done" | "error";
+  url?: string;
+  error?: string;
+  since: string;
+  progressLabel?: string;
+  prompt?: string;
+  startImageUrl?: string;
+  onOpenStartImage?: () => void;
+  meta: React.ReactNode;
+  createdAt: string;
+  onOpen: () => void;
+  onDelete: () => void;
+}) {
+  const busy = status === "queued" || status === "running";
+  return (
+    <article className="border-border/60 group animate-in fade-in flex flex-col overflow-hidden rounded-md border">
+      <div className="relative aspect-video overflow-hidden bg-black">
+        {status === "done" && url && (
+          <button type="button" onClick={onOpen} className="absolute inset-0" aria-label="Videoyu aç">
+            <video
+              src={`${url}#t=0.1`}
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              onMouseEnter={(e) => e.currentTarget.play().catch(() => undefined)}
+              onMouseLeave={(e) => {
+                e.currentTarget.pause();
+                e.currentTarget.currentTime = 0.1;
+              }}
+              className="absolute inset-0 h-full w-full object-contain"
+            />
+            <span className="bg-background/80 absolute right-2 bottom-2 flex items-center justify-center rounded-sm p-1 opacity-0 transition-opacity group-hover:opacity-100">
+              <Maximize2 className="size-3.5" />
+            </span>
+          </button>
+        )}
+        {busy && (
+          <div className="bg-muted absolute inset-0 overflow-hidden">
+            {status === "running" && (
+              <>
+                <div className="bg-primary/30 igor-glow absolute top-1/2 left-1/2 size-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl" />
+                <div className="igor-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.07] to-transparent" />
+              </>
+            )}
+            <div className="relative flex h-full flex-col items-center justify-center gap-1">
+              <span className="text-sm font-medium">{status === "running" ? "Üretiliyor" : "Kuyrukta"}</span>
+              {progressLabel && <span className="text-muted-foreground text-xs">{progressLabel}</span>}
+              <ElapsedTimer since={since} />
+            </div>
+            {status === "running" && (
+              <div className="bg-foreground/10 absolute inset-x-0 bottom-0 h-0.5 overflow-hidden">
+                <div className="bg-primary igor-indeterminate absolute inset-y-0 w-[35%]" />
+              </div>
+            )}
+          </div>
+        )}
+        {status === "error" && (
+          <div className="bg-muted absolute inset-0 flex items-center justify-center p-3">
+            <span className="text-destructive line-clamp-4 text-center text-xs break-words">{error}</span>
+          </div>
+        )}
+      </div>
+      <div className="flex flex-1 flex-col gap-2 p-2.5">
+        <div className="flex flex-wrap items-center gap-1">{meta}</div>
+        {prompt && <p className="text-muted-foreground line-clamp-2 text-xs leading-relaxed">{prompt}</p>}
+        <div className="mt-auto flex items-center gap-3 pt-0.5">
+          {startImageUrl && (
+            <button type="button" onClick={onOpenStartImage} title="Başlangıç görseli">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={startImageUrl} alt="başlangıç görseli" className="size-7 rounded-sm object-cover" />
+            </button>
+          )}
+          <span className="text-muted-foreground text-[11px]">
+            {new Date(createdAt).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" })}
+          </span>
+          <div className="ml-auto flex items-center gap-3">
+            {status === "done" && url && (
+              <a href={url} download className="text-primary text-xs font-medium hover:underline">
+                İndir
+              </a>
+            )}
+            <button type="button" onClick={onDelete} className="text-muted-foreground hover:text-destructive text-xs font-medium">
+              Sil
+            </button>
+          </div>
+        </div>
+      </div>
+    </article>
   );
 }
