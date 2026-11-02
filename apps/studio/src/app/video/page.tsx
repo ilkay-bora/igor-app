@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { RatioPicker } from "@/components/ratio-picker";
 import { Badge } from "@/components/ui/badge";
 import { FullscreenViewer } from "@/components/fullscreen-viewer";
 import { ElapsedTimer } from "@/components/elapsed-timer";
@@ -20,7 +21,7 @@ import { StartImageSettings } from "@/components/start-image-settings";
 import {
   VIDEO_DURATIONS,
   VIDEO_PRESET_PROMPTS,
-  VIDEO_RESOLUTIONS,
+  VIDEO_RESOLUTION_OPTIONS,
   VIDEO_STYLES,
   enqueueVideoJob,
   enqueueVideoProject,
@@ -274,7 +275,7 @@ export default function VideoPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 py-10">
+    <main className="mx-auto flex w-full max-w-[1800px] flex-1 flex-col gap-6 px-6 py-10">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Video (Yerel — LTX-2.3)</h1>
         <p className="text-muted-foreground text-sm">
@@ -357,21 +358,7 @@ export default function VideoPage() {
                 </Select>
               </div>
 
-              <div className="min-w-48 space-y-1.5">
-                <span className="text-muted-foreground text-xs">Çözünürlük</span>
-                <Select value={resolution} onValueChange={(v) => v && setResolution(v)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VIDEO_RESOLUTIONS.map((r) => (
-                      <SelectItem key={r.value} value={r.value}>
-                        {r.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <RatioPicker label="Çözünürlük" options={VIDEO_RESOLUTION_OPTIONS} value={resolution} onChange={setResolution} />
 
               <div className="min-w-32 space-y-1.5">
                 <span className="text-muted-foreground text-xs">Süre</span>
@@ -698,21 +685,7 @@ export default function VideoPage() {
             </Button>
 
             <div className="flex flex-wrap items-end gap-3 border-t border-border pt-4">
-              <div className="min-w-48 space-y-1.5">
-                <span className="text-muted-foreground text-xs">Çözünürlük (tüm sahneler)</span>
-                <Select value={resolution} onValueChange={(v) => v && setResolution(v)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VIDEO_RESOLUTIONS.map((r) => (
-                      <SelectItem key={r.value} value={r.value}>
-                        {r.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <RatioPicker label="Çözünürlük (tüm sahneler)" options={VIDEO_RESOLUTION_OPTIONS} value={resolution} onChange={setResolution} />
 
               <Button onClick={handleGenerateProject} disabled={!scenesReady} className="ml-auto">
                 Projeyi Kuyruğa Ekle ({scenes.length} sahne)

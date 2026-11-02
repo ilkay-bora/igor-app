@@ -366,6 +366,20 @@ export const VIDEO_RESOLUTIONS = [
   { value: "1024x1024", label: "1024x1024 (kare)" },
 ];
 
+// Shape data for the visual ratio picker (components/ratio-picker.tsx).
+export const RATIO_OPTIONS = [
+  { value: "1:1", name: "Kare", detail: "1:1", w: 1, h: 1 },
+  { value: "16:9", name: "Yatay", detail: "16:9", w: 16, h: 9 },
+  { value: "9:16", name: "Dikey", detail: "9:16", w: 9, h: 16 },
+  { value: "4:3", name: "Klasik", detail: "4:3", w: 4, h: 3 },
+];
+
+export const VIDEO_RESOLUTION_OPTIONS = [
+  { value: "1280x720", name: "Yatay", detail: "16:9 · 1280×720", w: 16, h: 9 },
+  { value: "720x1280", name: "Dikey", detail: "9:16 · 720×1280", w: 9, h: 16 },
+  { value: "1024x1024", name: "Kare", detail: "1:1 · 1024×1024", w: 1, h: 1 },
+];
+
 export const VIDEO_DURATIONS = [3, 5, 8];
 
 // Steps for the local FLUX schnell start-image generation (video's only image

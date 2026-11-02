@@ -1,8 +1,8 @@
 import { Gabarito } from "next/font/google";
 
-// Same title font as linknown.com, for brand consistency across projects.
+// Brand/title font; 900 is the IGOR wordmark weight.
 export const gabarito = Gabarito({
-  weight: ["400", "700"],
+  weight: ["400", "700", "900"],
   style: ["normal"],
   subsets: ["latin"],
   display: "swap",

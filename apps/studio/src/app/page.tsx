@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { RatioPicker } from "@/components/ratio-picker";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { FitImage } from "@/components/fit-image";
@@ -22,7 +23,7 @@ import { TagFilter, TagInput } from "@/components/tag-controls";
 import {
   MODELS,
   PRESET_PROMPTS,
-  RATIOS,
+  RATIO_OPTIONS,
   type ModelOption,
   type PromptEntry,
   type Ratio,
@@ -191,7 +192,7 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-6 py-10">
+    <main className="mx-auto flex w-full max-w-[1800px] flex-1 flex-col gap-8 px-6 py-10">
       <Card>
         <CardContent className="flex flex-col gap-4 pt-6">
           <Textarea
@@ -257,21 +258,7 @@ export default function Home() {
               </Select>
             </div>
 
-            <div className="min-w-32 space-y-1.5">
-              <span className="text-muted-foreground text-xs">Oran</span>
-              <Select value={ratio} onValueChange={(v) => v && setRatio(v as Ratio)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {RATIOS.map((r) => (
-                    <SelectItem key={r.value} value={r.value}>
-                      {r.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <RatioPicker label="Oran" options={RATIO_OPTIONS} value={ratio} onChange={(v) => setRatio(v as Ratio)} />
 
             <TagInput value={tag} onChange={setTag} suggestions={allTags} />
 
@@ -291,7 +278,7 @@ export default function Home() {
             : "Bu etikette henüz görsel yok."}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
           {visibleItems.map((item) => (
             <GalleryTile
               key={item.id}

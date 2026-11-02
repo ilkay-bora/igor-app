@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeftRight, AudioLines, Clapperboard, GripVertical, ImagePlus, Loader2, Mic, Music, Pause, Play, Plus, RectangleHorizontal, Scissors, Type, X } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { RatioPicker } from "@/components/ratio-picker";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -22,7 +23,7 @@ import { clearDraft, loadDraft, saveDraft } from "@/lib/editor-draft";
 import { TRANSITION_PREVIEW_SECONDS, transitionFrame } from "@/lib/editor-transition-preview";
 import {
   TRANSITIONS,
-  VIDEO_RESOLUTIONS,
+  VIDEO_RESOLUTION_OPTIONS,
   enqueueEditorProject,
   fetchEditorProjects,
   deleteEditorProject,
@@ -194,14 +195,14 @@ function Toggle({
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative h-5 w-9 shrink-0 rounded-full transition-colors",
-          checked ? "bg-primary" : "bg-muted"
+          "relative inline-block h-5 w-9 shrink-0 rounded-full p-0 transition-colors",
+          checked ? "bg-primary" : "bg-zinc-600"
         )}
       >
         <span
           className={cn(
-            "bg-background absolute top-0.5 size-4 rounded-full shadow transition-transform",
-            checked ? "translate-x-4" : "translate-x-0.5"
+            "absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow-sm transition-transform",
+            checked ? "translate-x-4" : "translate-x-0"
           )}
         />
       </button>
@@ -483,7 +484,7 @@ export default function EditorPage() {
       });
       setDraftStatus(
         saved
-          ? `Bu tarayıcıda kaydedildi, ${new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}`
+          ? `Kaydedildi, ${new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}`
           : "Otomatik kayıt başarısız"
       );
     }, 400);
@@ -2632,21 +2633,7 @@ export default function EditorPage() {
               )}
 
               <div className="border-border flex flex-wrap items-end gap-3 border-t pt-4">
-                <div className="min-w-48 space-y-1.5">
-                  <span className="text-muted-foreground text-xs">Çıktı boyutu</span>
-                  <Select value={resolution} onValueChange={(v) => v && setResolution(v)}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {VIDEO_RESOLUTIONS.map((r) => (
-                        <SelectItem key={r.value} value={r.value}>
-                          {r.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <RatioPicker label="Çıktı boyutu" options={VIDEO_RESOLUTION_OPTIONS} value={resolution} onChange={setResolution} />
                 <div className="ml-auto flex items-center gap-3">
                   <span className="text-muted-foreground text-xs">{draftStatus}</span>
                   <Button variant="secondary" onClick={handleNewProject} disabled={timeline.length === 0}>

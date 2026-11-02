@@ -16,3 +16,13 @@
 - Closing the window hides to tray; tray menu has open, editor, log file, quit. Quit kills the server tree.
 - Server log: `%APPDATA%/@igor/desktop/studio.log`.
 - Scripts: `npm run desktop`, `npm run desktop:build`.
+
+## Editor + branding pass (same day)
+
+- Brand is now a pure wordmark: "IGOR" in Gabarito Black (OFL), in the nav, favicon, window/taskbar icon and tray. The image-glyph icon is gone.
+- Editor draft moved from browser IndexedDB to `data/editor-draft.json` via `/api/editor-draft` (survives desktop port changes; ready for MCP edits).
+- Runtime media (`/videos`, `/generated`, `/voices`) served by route handlers with Range support, because `next start` only serves public/ files that existed at build time.
+- ffmpeg path also resolves the workspace-hoisted `node_modules` (renders were broken in the monorepo).
+- Fixed the editor's "Hizala" switch (thumb was positioned off the track).
+- New `RatioPicker` (drawn aspect frames) replaces the ratio/resolution dropdowns on Create, Video and Editor.
+- Pages use the full window width (max 1800px) instead of 4xl/6xl columns; gallery goes up to 6 columns.

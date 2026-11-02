@@ -24,11 +24,9 @@ export function Nav() {
 
   return (
     <header className="border-border/60 sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
+      <div className="mx-auto flex w-full max-w-[1800px] items-center justify-between gap-2 px-4 py-3 sm:px-6">
         <Link href="/" className="flex shrink-0 items-center gap-2" onClick={() => setOpen(false)}>
-          {/* eslint-disable-next-line @next/next/no-img-element -- yerel SVG, next/image gereksiz */}
-          <img src="/icon.svg" alt="" width={24} height={24} className="size-6 rounded-md" />
-          <span className={`text-lg font-bold tracking-tight sm:text-xl ${gabarito.className}`}>IGOR</span>
+          <span className={`text-2xl leading-none font-black tracking-tight uppercase ${gabarito.className}`}>IGOR</span>
         </Link>
 
         <nav className="bg-muted hidden max-w-full items-center gap-1 overflow-x-auto rounded-full p-1 md:flex">
