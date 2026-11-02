@@ -4,7 +4,7 @@
 
 IGOR runs on your own GPU. It generates images, video clips and voiceovers with local models (via ComfyUI) or your own cloud API keys, and puts them on a timeline editor that renders to MP4 with ffmpeg. An MCP server (in progress) lets Claude Code, Cursor and other agents create and edit projects, which you then open in the same editor.
 
-> Status: early development. The desktop app and MCP server are being built, see [docs/ROADMAP.md](docs/ROADMAP.md).
+> Status: early development. The desktop shell runs; the MCP server and installer are being built, see [docs/ROADMAP.md](docs/ROADMAP.md).
 
 [Türkçe](#türkçe)
 
@@ -31,19 +31,20 @@ git clone https://github.com/ilkay-bora/igor-app.git
 cd igor-app
 npm install
 cp apps/studio/.env.example apps/studio/.env.local   # then edit it
-npm run dev
+npm run desktop:build   # builds the studio and opens the desktop app
 ```
 
-Open http://localhost:3000 and log in with the `APP_TOKEN` you set.
+After the first build, `npm run desktop` opens the app directly. The desktop app signs itself in with a local token and keeps running in the tray when you close the window, so queued jobs continue. `npm run dev` still runs the studio in a browser at http://localhost:3000 for development.
 
 ## Project layout
 
 ```
 apps/studio     Next.js app: UI and local API
+apps/desktop    Electron shell: window, tray, starts the studio server
 docs/           Roadmap and design notes
 ```
 
-Planned: `packages/core` (engine shared by UI, API and MCP), `packages/mcp` (MCP server), `apps/desktop` (Electron shell).
+Planned: `packages/core` (engine shared by UI, API and MCP), `packages/mcp` (MCP server).
 
 ## License
 

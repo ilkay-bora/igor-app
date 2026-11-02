@@ -11,7 +11,9 @@
     "dev": "npm run dev -w @igor/studio",
     "build": "npm run build -w @igor/studio",
     "lint": "npm run lint -w @igor/studio",
-    "typecheck": "tsc --noEmit -p apps/studio"
+    "typecheck": "tsc --noEmit -p apps/studio",
+    "desktop": "npm run start -w @igor/desktop",
+    "desktop:build": "npm run build && npm run start -w @igor/desktop"
   },
   "engines": {
     "node": ">=20"
