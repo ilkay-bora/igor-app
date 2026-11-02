@@ -1,0 +1,19 @@
+{
+  "name": "igor",
+  "private": true,
+  "description": "Local, agent-ready AI video editor and media studio",
+  "license": "MIT",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @igor/studio",
+    "build": "npm run build -w @igor/studio",
+    "lint": "npm run lint -w @igor/studio",
+    "typecheck": "tsc --noEmit -p apps/studio"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
