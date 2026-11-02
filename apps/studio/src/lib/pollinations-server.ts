@@ -1,10 +1,11 @@
+import { getSetting } from "./settings";
 export async function runPollinationsGeneration(params: {
   prompt: string;
   width: number;
   height: number;
   seed?: string;
 }): Promise<{ buffer: Buffer; contentType: string }> {
-  const apiKey = process.env.POLLINATIONS_API_KEY;
+  const apiKey = getSetting("pollinationsApiKey");
   const seed = params.seed ?? String(Date.now());
   // model=flux is always free/unlimited on Pollinations, unlike other models
   // that draw from the (limited) Pollen credit balance.

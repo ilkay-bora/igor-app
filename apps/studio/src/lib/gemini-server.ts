@@ -1,3 +1,4 @@
+import { getSetting } from "./settings";
 const MODEL = "gemini-2.5-flash-image";
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
@@ -17,9 +18,9 @@ export async function runGeminiGeneration(params: {
   // first, as Gemini's own multi-turn image-editing examples do.
   referenceImageDataUrl?: string;
 }): Promise<{ imageUrl: string }> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = getSetting("geminiApiKey");
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY tanımlı değil. web/.env.local dosyasına ekle.");
+    throw new Error("Gemini API anahtarı girilmemiş. Ayarlar sayfasından ekleyebilirsin.");
   }
 
   const requestParts: GeminiPart[] = [];

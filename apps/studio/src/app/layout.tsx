@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Nav } from "@/components/nav";
+import { SetupGate } from "@/components/setup-gate";
 import "./globals.css";
 
 const inter = Inter({
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="tr" className={`dark ${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
+        <SetupGate />
         <Nav />
         {children}
       </body>

@@ -42,3 +42,12 @@
 - Hero mode: composer is vertically centered with a title until the first generation of the visit, then glides to the top (min-height transition) and the gallery takes over.
 - Motion: generating tile has a pulsing glow, shimmer sweep and indeterminate bar (`igor-*` keyframes in globals.css, disabled under reduced motion); a freshly generated image reveals blur-to-sharp once (`fresh` flag, history images do not animate).
 - `TagInput` and `RatioPicker` gained compact toolbar variants.
+
+## Settings, first-run setup, windowless ComfyUI, nav (same day)
+
+- ComfyUI console window fixed: the venv `python.exe` is only a launcher that re-executes the base interpreter, and that grandchild got its own console (Node can't hide it, and detached spawns ignore windowsHide). The launcher now prefers `venv\Scripts\pythonw.exe`; verified no conhost under either process. It writes `data/comfyui.pid` so IGOR can stop the instance it started.
+- Settings layer `src/lib/settings.ts`: `data/settings.json` (gitignored), resolution order saved value, then env var, then default. Gemini, Pollinations, TTS, ComfyUI dir/URL all read through it at call time (`getSetting`, `comfyUrl()`).
+- `/api/settings` (GET masked view: set/source/last 4 chars, POST patch), `/api/settings/test` (Gemini model list, free), `/api/settings/comfy` (start/stop).
+- `/setup` first-run screen and `/settings` page share `SettingsForm`. `SetupGate` in the root layout sends an install without `setupDone` to `/setup` once.
+- Nav rebuilt at a fixed h-14: Oluştur, Editör, Video, Seslendirme, Karşılaştır with icons and a red underline for the active page; Hatalar and Ayarlar as icon buttons on the right. Editor and create-page height calcs updated to 3.5rem.
+- Testing note: don't open `/video/editor` from a headless browser, its autosave writes `data/editor-draft.json`.

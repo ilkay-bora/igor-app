@@ -204,7 +204,7 @@ export default function Home() {
       <section
         className={cn(
           "flex flex-col items-center justify-center transition-[min-height,padding] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]",
-          hero ? "min-h-[calc(100dvh-4.25rem)] py-10" : "min-h-0 pt-6 pb-8"
+          hero ? "min-h-[calc(100dvh-3.5rem)] py-10" : "min-h-0 pt-6 pb-8"
         )}
       >
         <div

@@ -216,7 +216,7 @@ export default function ComparePage() {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <ProviderCard
           title="Gemini (Nano Banana)"
-          description="En yüksek kalite, ama .env.local'de GEMINI_API_KEY ister."
+          description="En yüksek kalite, ama Ayarlar'da Gemini API anahtarı ister."
           badge="API key gerekli"
           badgeVariant="secondary"
           state={gemini}

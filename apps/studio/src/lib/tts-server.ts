@@ -1,3 +1,4 @@
+import { getSetting } from "./settings";
 import { spawn } from "child_process";
 import path from "path";
 import { promises as fs } from "fs";
@@ -161,9 +162,9 @@ async function callGeminiTts(text: string, voice: string, apiKey: string): Promi
 // on failure (Google's own docs note the API occasionally returns a
 // text-only response instead of audio for a small fraction of requests).
 async function synthesizeToFile(text: string, voice: string, outPath: string): Promise<void> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = getSetting("geminiApiKey");
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY tanımlı değil. web/.env.local dosyasına ekle.");
+    throw new Error("Gemini API anahtarı girilmemiş. Ayarlar sayfasından ekleyebilirsin.");
   }
   if (!text.trim()) {
     throw new Error("Metin gerekli");

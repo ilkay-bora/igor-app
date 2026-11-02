@@ -1,11 +1,11 @@
 import { spawn } from "child_process";
 import fs from "fs";
 import path from "path";
+import { comfyUrl, getSetting } from "./settings";
 
-const COMFY_URL = process.env.COMFYUI_URL ?? "http://127.0.0.1:8188";
-const COMFY_DIR = process.env.COMFYUI_DIR ?? path.resolve(process.cwd(), "..", "ComfyUI");
-const PYTHON = path.join(COMFY_DIR, "venv", "Scripts", "python.exe");
-const LOG_FILE = path.join(process.cwd(), "data", "comfyui.log");
+const DATA_DIR = path.join(process.cwd(), "data");
+const LOG_FILE = path.join(DATA_DIR, "comfyui.log");
+const PID_FILE = path.join(DATA_DIR, "comfyui.pid");
 const STARTUP_TIMEOUT_MS = 120_000;
 
 // Local ComfyUI needs to be running for image/video generation. Instead of
@@ -16,23 +16,59 @@ const STARTUP_TIMEOUT_MS = 120_000;
 // dedupes concurrent generation requests into a single launch attempt.
 let launching: Promise<void> | null = null;
 
+function comfyDir(): string {
+  return getSetting("comfyuiDir") ?? path.resolve(process.cwd(), "..", "ComfyUI");
+}
+
+/**
+ * Prefer the venv's pythonw.exe. The venv python.exe is only a launcher that
+ * re-executes the base interpreter, and that child gets its own console
+ * window even with windowsHide (Node can't hide a grandchild's console, and
+ * detached spawns ignore windowsHide on Windows). pythonw is a GUI-subsystem
+ * binary, so neither process ever opens a console. Output still goes to
+ * data/comfyui.log through the redirected stdio handles.
+ */
+function pythonPath(dir: string): string | null {
+  const scripts = path.join(dir, "venv", "Scripts");
+  for (const exe of ["pythonw.exe", "python.exe"]) {
+    const p = path.join(scripts, exe);
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
 async function isComfyUp(): Promise<boolean> {
   try {
-    const res = await fetch(`${COMFY_URL}/system_stats`, { signal: AbortSignal.timeout(2000) });
+    const res = await fetch(`${comfyUrl()}/system_stats`, { signal: AbortSignal.timeout(2000) });
     return res.ok;
   } catch {
     return false;
   }
 }
 
+function portFromUrl(): string {
+  try {
+    return new URL(comfyUrl()).port || "8188";
+  } catch {
+    return "8188";
+  }
+}
+
 function spawnComfy() {
+  const dir = comfyDir();
+  const python = pythonPath(dir);
+  if (!python || !fs.existsSync(path.join(dir, "main.py"))) {
+    throw new Error(`ComfyUI bulunamadı: ${dir}. Ayarlar sayfasından ComfyUI klasörünü seç.`);
+  }
+  fs.mkdirSync(DATA_DIR, { recursive: true });
   const log = fs.openSync(LOG_FILE, "a");
-  const child = spawn(PYTHON, ["main.py", "--listen", "127.0.0.1", "--port", "8188"], {
-    cwd: COMFY_DIR,
+  const child = spawn(python, ["main.py", "--listen", "127.0.0.1", "--port", portFromUrl()], {
+    cwd: dir,
     detached: true,
     windowsHide: true,
     stdio: ["ignore", log, log],
   });
+  if (child.pid) fs.writeFileSync(PID_FILE, String(child.pid));
   // detached + unref so the ComfyUI process outlives this Node process
   // (dev server restarts, Turbopack HMR reloads of this module, etc.)
   child.unref();
@@ -58,4 +94,39 @@ export async function ensureComfyRunning(): Promise<void> {
   }
 
   await launching;
+}
+
+export type ComfyStatus = {
+  running: boolean;
+  dir: string;
+  dirValid: boolean;
+  /** True when IGOR launched the running instance and can stop it. */
+  ownedByIgor: boolean;
+};
+
+export async function comfyStatus(): Promise<ComfyStatus> {
+  const dir = comfyDir();
+  return {
+    running: await isComfyUp(),
+    dir,
+    dirValid: !!pythonPath(dir) && fs.existsSync(path.join(dir, "main.py")),
+    ownedByIgor: fs.existsSync(PID_FILE),
+  };
+}
+
+/** Stops the ComfyUI instance IGOR started (frees its RAM and VRAM). */
+export async function stopComfy(): Promise<boolean> {
+  let pid: string;
+  try {
+    pid = fs.readFileSync(PID_FILE, "utf8").trim();
+  } catch {
+    return false;
+  }
+  await new Promise<void>((resolve) => {
+    const p = spawn("taskkill", ["/PID", pid, "/T", "/F"], { windowsHide: true, stdio: "ignore" });
+    p.on("exit", () => resolve());
+    p.on("error", () => resolve());
+  });
+  fs.rmSync(PID_FILE, { force: true });
+  return true;
 }

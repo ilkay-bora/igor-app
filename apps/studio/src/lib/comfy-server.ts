@@ -1,7 +1,7 @@
+import { comfyUrl } from "./settings";
 import { ensureComfyRunning } from "./comfy-launcher";
 import { uploadImageToComfy } from "./comfy-upload";
 
-const COMFY_URL = process.env.COMFYUI_URL ?? "http://127.0.0.1:8188";
 
 type Workflow = Record<string, { class_type: string; inputs: Record<string, unknown> }>;
 
@@ -153,13 +153,13 @@ export async function runComfyGeneration(params: {
 
   let queueRes: Response;
   try {
-    queueRes = await fetch(`${COMFY_URL}/prompt`, {
+    queueRes = await fetch(`${comfyUrl()}/prompt`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt: workflow, client_id: clientId }),
     });
   } catch {
-    throw new Error(`ComfyUI'a bağlanılamadı. Yerel sunucu çalışıyor mu? (${COMFY_URL})`);
+    throw new Error(`ComfyUI'a bağlanılamadı. Yerel sunucu çalışıyor mu? (${comfyUrl()})`);
   }
 
   const queueData = await queueRes.json();
@@ -176,7 +176,7 @@ export async function runComfyGeneration(params: {
   const timeoutMs = checkpoint === FLUX_DEV_CHECKPOINT ? 600000 : 120000;
   while (Date.now() - start < timeoutMs) {
     await new Promise((r) => setTimeout(r, 1000));
-    const histRes = await fetch(`${COMFY_URL}/history/${promptId}`);
+    const histRes = await fetch(`${comfyUrl()}/history/${promptId}`);
     const hist = await histRes.json();
     const entry = hist[promptId];
 
@@ -193,7 +193,7 @@ export async function runComfyGeneration(params: {
         subfolder: image.subfolder ?? "",
         type: image.type ?? "output",
       });
-      const imgRes = await fetch(`${COMFY_URL}/view?${viewParams.toString()}`);
+      const imgRes = await fetch(`${comfyUrl()}/view?${viewParams.toString()}`);
       const buffer = Buffer.from(await imgRes.arrayBuffer());
       const contentType = imgRes.headers.get("content-type") || "image/png";
       return {
