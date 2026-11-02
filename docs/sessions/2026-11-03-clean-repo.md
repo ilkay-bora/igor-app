@@ -33,3 +33,12 @@
 - Preview is sized by a ResizeObserver to the largest frame that fits its column, for any output ratio.
 - Render list ("Düzenlemeler") moved into a "Render'lar" tab next to the library.
 - Fixed: preview time could read -0.0s right after a load, hiding every layer that starts at 0.
+
+## Tighter radius, button pass, centered create composer (same day)
+
+- Global `--radius` 0.9rem to 0.5rem; pill shapes (nav, chips, tabs, badges, tile overlays) moved to `rounded-md`/`rounded-sm`. Round stays only on toggles, dots and slider thumbs.
+- Buttons: one height scale (sm h-8, default h-9, lg h-10), primary gets a subtle inset highlight. Select trigger matches at h-9, so toolbars line up.
+- Create page: single composer card (borderless textarea + one toolbar row: model, compact ratio, compact `#etiket` field, Oluştur). Enter submits, Shift+Enter new line.
+- Hero mode: composer is vertically centered with a title until the first generation of the visit, then glides to the top (min-height transition) and the gallery takes over.
+- Motion: generating tile has a pulsing glow, shimmer sweep and indeterminate bar (`igor-*` keyframes in globals.css, disabled under reduced motion); a freshly generated image reveals blur-to-sharp once (`fresh` flag, history images do not animate).
+- `TagInput` and `RatioPicker` gained compact toolbar variants.

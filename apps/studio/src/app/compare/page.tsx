@@ -331,7 +331,7 @@ function ProviderCard({
               </div>
             )}
             {state.status === "done" && (
-              <span className="bg-background/80 absolute bottom-2 left-2 rounded-full px-2 py-0.5 text-[11px]">
+              <span className="bg-background/80 absolute bottom-2 left-2 rounded-sm px-2 py-0.5 text-[11px]">
                 Yakınlaştır
               </span>
             )}

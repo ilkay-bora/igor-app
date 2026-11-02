@@ -126,7 +126,7 @@ export default function VoicePage() {
                   key={p.id}
                   type="button"
                   onClick={() => setStyleInstruction(p.instruction)}
-                  className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                  className={`rounded-md border px-3 py-1 text-xs transition-colors ${
                     styleInstruction === p.instruction
                       ? "border-primary bg-primary text-primary-foreground"
                       : "border-input hover:bg-accent"
@@ -139,7 +139,7 @@ export default function VoicePage() {
                 <button
                   type="button"
                   onClick={() => setStyleInstruction("")}
-                  className="text-muted-foreground rounded-full px-3 py-1 text-xs underline-offset-4 hover:underline"
+                  className="text-muted-foreground rounded-md px-3 py-1 text-xs underline-offset-4 hover:underline"
                 >
                   Temizle
                 </button>

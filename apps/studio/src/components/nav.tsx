@@ -29,13 +29,13 @@ export function Nav() {
           <span className={`text-2xl leading-none font-black tracking-tight uppercase ${gabarito.className}`}>IGOR</span>
         </Link>
 
-        <nav className="bg-muted hidden max-w-full items-center gap-1 overflow-x-auto rounded-full p-1 md:flex">
+        <nav className="bg-muted hidden max-w-full items-center gap-1 overflow-x-auto rounded-lg p-1 md:flex">
           {LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className={cn(
-                "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors sm:px-4 sm:text-sm",
+                "shrink-0 rounded-md px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors sm:px-4 sm:text-sm",
                 pathname === link.href
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -51,7 +51,7 @@ export function Nav() {
           onClick={() => setOpen((v) => !v)}
           aria-label={open ? "Menüyü kapat" : "Menüyü aç"}
           aria-expanded={open}
-          className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-full p-2 transition-colors md:hidden"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md p-2 transition-colors md:hidden"
         >
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
@@ -65,7 +65,7 @@ export function Nav() {
               href={link.href}
               onClick={() => setOpen(false)}
               className={cn(
-                "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 pathname === link.href
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"

@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { ElapsedTimer } from "@/components/elapsed-timer";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -13,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
 import { RatioPicker } from "@/components/ratio-picker";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -54,6 +53,8 @@ type GalleryItem = {
   savedId?: string;
   error?: string;
   tag?: string;
+  /** Generated in this visit: plays the reveal animation once. */
+  fresh?: boolean;
 };
 
 export default function Home() {
@@ -68,6 +69,7 @@ export default function Home() {
   const [recentPrompts, setRecentPrompts] = useState<PromptEntry[]>([]);
   const [tag, setTag] = useState("");
   const [filterTag, setFilterTag] = useState<string | null>(null);
+  const [started, setStarted] = useState(false);
 
   const allTags = collectTags(items);
   const visibleItems = filterTag === null ? items : items.filter((it) => it.tag === filterTag);
@@ -136,6 +138,7 @@ export default function Home() {
   async function handleGenerate() {
     if (!prompt.trim()) return;
 
+    setStarted(true);
     const id = crypto.randomUUID();
     const currentPrompt = prompt;
     const currentModel = model;
@@ -176,7 +179,7 @@ export default function Home() {
       } else {
         url = await generatePollinationsImage(currentPrompt, currentRatio);
       }
-      updateItem(id, { status: "done", url });
+      updateItem(id, { status: "done", url, fresh: true });
       save(id, currentPrompt, currentModel, currentRatio, currentTag, { dataUrl: url });
     } catch (err) {
       const message = toErrorMessage(err);
@@ -191,91 +194,122 @@ export default function Home() {
     }
   }
 
+  const pendingCount = items.filter((it) => it.status === "loading").length;
+  // Hero mode: composer sits in the middle of the screen until the first
+  // generation of this visit, then glides up and the gallery takes over.
+  const hero = !started;
+
   return (
-    <main className="mx-auto flex w-full max-w-[1800px] flex-1 flex-col gap-8 px-6 py-10">
-      <Card>
-        <CardContent className="flex flex-col gap-4 pt-6">
-          <Textarea
-            placeholder="Ne oluşturmak istersin? Örn: modern minimalist bir kahve dükkanı afişi, sıcak tonlar"
+    <main className="mx-auto flex w-full max-w-[1800px] flex-1 flex-col px-6 pb-10">
+      <section
+        className={cn(
+          "flex flex-col items-center justify-center transition-[min-height,padding] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          hero ? "min-h-[calc(100dvh-4.25rem)] py-10" : "min-h-0 pt-6 pb-8"
+        )}
+      >
+        <div
+          className={cn(
+            "grid w-full transition-[grid-template-rows,opacity,margin] duration-500 ease-out",
+            hero ? "mb-7 grid-rows-[1fr] opacity-100" : "mb-0 grid-rows-[0fr] opacity-0"
+          )}
+        >
+          <div className="overflow-hidden text-center">
+            <h1 className="text-3xl font-semibold tracking-tight">Ne oluşturalım?</h1>
+            <p className="text-muted-foreground mt-2 text-sm">Bir sahne anlat, modeli ve oranı seç, gerisini IGOR halletsin.</p>
+          </div>
+        </div>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleGenerate();
+          }}
+          className="bg-card ring-foreground/10 focus-within:ring-primary/40 w-full max-w-4xl rounded-lg shadow-lg shadow-black/20 ring-1 transition-shadow"
+        >
+          <textarea
+            placeholder="Ne oluşturmak istersin? Enter ile oluştur, Shift+Enter yeni satır."
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                handleGenerate();
+              }
+            }}
             rows={3}
-            className="resize-none text-base"
+            className="placeholder:text-muted-foreground thin-scrollbar block max-h-60 min-h-24 w-full resize-none bg-transparent px-4 pt-4 pb-2 text-base outline-none [field-sizing:content]"
           />
+          <div className="border-border/60 flex flex-wrap items-center gap-2 border-t p-2.5">
+            <Select value={modelId} onValueChange={(v) => v && setModelId(v)}>
+              <SelectTrigger className="w-64" aria-label="Model">
+                <SelectValue>{(v: string) => MODELS.find((m) => m.id === v)?.label ?? v}</SelectValue>
+              </SelectTrigger>
+              <SelectContent className="w-[22rem] max-w-[90vw]">
+                {MODELS.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    <span className="flex w-full flex-col items-start gap-1 py-0.5">
+                      <span className="truncate text-sm">{m.label}</span>
+                      <Badge variant={m.kind === "gemini" ? "secondary" : "default"} className="text-[10px]">
+                        {m.badge}
+                      </Badge>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <div className="flex flex-wrap gap-2">
-            {PRESET_PROMPTS.map((text) => (
-              <button
-                key={text}
-                type="button"
-                onClick={() => setPrompt(text)}
-                className="border-input hover:bg-accent max-w-64 truncate rounded-full border px-3 py-1 text-xs transition-colors"
-                title={text}
-              >
-                {text}
-              </button>
-            ))}
-          </div>
+            <RatioPicker compact label="Oran" options={RATIO_OPTIONS} value={ratio} onChange={(v) => setRatio(v as Ratio)} />
 
-          {recentPrompts.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {recentPrompts.slice(0, 8).map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setPrompt(p.text)}
-                  className="bg-muted hover:bg-accent max-w-64 truncate rounded-full px-3 py-1 text-xs transition-colors"
-                  title={p.text}
-                >
-                  {p.text}
-                </button>
-              ))}
+            <TagInput compact value={tag} onChange={setTag} suggestions={allTags} />
+
+            <div className="ml-auto flex items-center gap-3">
+              {pendingCount > 0 && (
+                <span className="text-muted-foreground animate-in fade-in flex items-center gap-1.5 text-xs">
+                  <Loader2 className="text-primary size-3.5 animate-spin" />
+                  {pendingCount} üretiliyor
+                </span>
+              )}
+              <Button type="submit" disabled={!prompt.trim()}>
+                <Sparkles data-icon="inline-start" />
+                Oluştur
+              </Button>
             </div>
-          )}
-
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="min-w-56 space-y-1.5">
-              <span className="text-muted-foreground text-xs">Model</span>
-              <Select value={modelId} onValueChange={(v) => v && setModelId(v)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="w-[22rem] max-w-[90vw]">
-                  {MODELS.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      <span className="flex w-full flex-col items-start gap-1 py-0.5">
-                        <span className="truncate text-sm">{m.label}</span>
-                        <Badge
-                          variant={m.kind === "gemini" ? "secondary" : "default"}
-                          className="text-[10px]"
-                        >
-                          {m.badge}
-                        </Badge>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <RatioPicker label="Oran" options={RATIO_OPTIONS} value={ratio} onChange={(v) => setRatio(v as Ratio)} />
-
-            <TagInput value={tag} onChange={setTag} suggestions={allTags} />
-
-            <Button onClick={handleGenerate} disabled={!prompt.trim()} className="ml-auto">
-              Oluştur
-            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </form>
 
-      <TagFilter tags={allTags} active={filterTag} onChange={setFilterTag} />
+        <div className="mt-4 flex w-full max-w-4xl flex-wrap justify-center gap-1.5">
+          {PRESET_PROMPTS.map((text) => (
+            <button
+              key={text}
+              type="button"
+              onClick={() => setPrompt(text)}
+              className="border-border text-muted-foreground hover:text-foreground hover:bg-muted max-w-64 truncate rounded-md border px-2.5 py-1 text-xs transition-colors"
+              title={text}
+            >
+              {text}
+            </button>
+          ))}
+          {recentPrompts.slice(0, 6).map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setPrompt(p.text)}
+              className="bg-muted/70 text-muted-foreground hover:text-foreground hover:bg-muted max-w-64 truncate rounded-md px-2.5 py-1 text-xs transition-colors"
+              title={p.text}
+            >
+              {p.text}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <div className="mb-4">
+        <TagFilter tags={allTags} active={filterTag} onChange={setFilterTag} />
+      </div>
 
       {visibleItems.length === 0 ? (
         <div className="text-muted-foreground flex flex-1 items-center justify-center py-24 text-center text-sm">
-          {items.length === 0
-            ? 'Henüz görsel üretmedin. Bir model seç, prompt yaz ve "Oluştur"a bas.'
-            : "Bu etikette henüz görsel yok."}
+          {items.length === 0 ? "Galerin burada görünecek." : "Bu etikette henüz görsel yok."}
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
@@ -365,29 +399,38 @@ function GalleryTile({
   onDelete: () => void;
 }) {
   return (
-    <div className="bg-muted group relative aspect-square overflow-hidden rounded-2xl">
+    <div className="bg-muted ring-foreground/5 group animate-in fade-in zoom-in-95 relative aspect-square overflow-hidden rounded-md ring-1 duration-500">
       <button type="button" onClick={onOpen} className="block h-full w-full text-left">
         {item.url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={item.url}
-            alt={item.prompt}
-            onError={onImgError}
-            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-          />
+          <span className={cn("block h-full w-full", item.fresh && "igor-reveal")}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={item.url}
+              alt={item.prompt}
+              onError={onImgError}
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            />
+          </span>
         )}
 
         {item.tag && (
-          <span className="bg-background/90 absolute top-2 left-2 max-w-[80%] truncate rounded-full px-2 py-0.5 text-xs">
+          <span className="bg-background/90 absolute top-2 left-2 max-w-[80%] truncate rounded-sm px-1.5 py-0.5 text-xs">
             #{item.tag}
           </span>
         )}
 
         {item.status === "loading" && (
-          <div className="bg-background/70 absolute inset-0 flex flex-col items-center justify-center gap-2">
-            <Loader2 className="text-primary size-6 animate-spin" />
-            <span className="text-sm">Üretiliyor...</span>
-            {item.startedAt && <ElapsedTimer since={item.startedAt} />}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="bg-primary/30 igor-glow absolute top-1/2 left-1/2 size-2/3 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl" />
+            <div className="igor-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.07] to-transparent" />
+            <div className="relative flex h-full flex-col items-center justify-center gap-1.5 p-4 text-center">
+              <span className="text-sm font-medium">Üretiliyor</span>
+              {item.startedAt && <ElapsedTimer since={item.startedAt} />}
+              <p className="text-muted-foreground mt-1 line-clamp-2 max-w-[85%] text-xs">{item.prompt}</p>
+            </div>
+            <div className="bg-foreground/10 absolute inset-x-0 bottom-0 h-0.5 overflow-hidden">
+              <div className="bg-primary igor-indeterminate absolute inset-y-0 w-[35%]" />
+            </div>
           </div>
         )}
 
@@ -414,7 +457,7 @@ function GalleryTile({
               href={item.savedUrl}
               download
               onClick={(e) => e.stopPropagation()}
-              className="bg-background/90 text-foreground rounded-full px-2 py-1 text-xs font-medium shadow"
+              className="bg-background/90 text-foreground rounded-sm px-2 py-1 text-xs font-medium shadow"
             >
               İndir
             </a>
@@ -426,7 +469,7 @@ function GalleryTile({
                 e.stopPropagation();
                 onDelete();
               }}
-              className="bg-background/90 text-destructive rounded-full px-2 py-1 text-xs font-medium shadow"
+              className="bg-background/90 text-destructive rounded-sm px-2 py-1 text-xs font-medium shadow"
             >
               Sil
             </button>

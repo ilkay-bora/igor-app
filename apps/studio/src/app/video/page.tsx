@@ -288,11 +288,11 @@ export default function VideoPage() {
         </p>
       </header>
 
-      <div className="bg-muted flex w-fit items-center gap-1 rounded-full p-1">
+      <div className="bg-muted flex w-fit items-center gap-1 rounded-lg p-1">
         <button
           type="button"
           onClick={() => setMode("single")}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+          className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
             mode === "single" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -301,7 +301,7 @@ export default function VideoPage() {
         <button
           type="button"
           onClick={() => setMode("project")}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+          className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
             mode === "project" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -326,7 +326,7 @@ export default function VideoPage() {
                   key={text}
                   type="button"
                   onClick={() => setPrompt(text)}
-                  className="border-input hover:bg-accent max-w-64 truncate rounded-full border px-3 py-1 text-xs transition-colors"
+                  className="border-input hover:bg-accent max-w-64 truncate rounded-md border px-3 py-1 text-xs transition-colors"
                   title={text}
                 >
                   {text}

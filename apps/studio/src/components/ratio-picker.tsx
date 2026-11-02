@@ -31,7 +31,7 @@ export function RatioPicker({
 }) {
   if (compact) {
     return (
-      <div role="radiogroup" aria-label={label ?? "Oran"} className={cn("bg-muted/60 inline-flex gap-0.5 rounded-lg p-0.5", className)}>
+      <div role="radiogroup" aria-label={label ?? "Oran"} className={cn("bg-muted/60 inline-flex h-9 items-stretch gap-0.5 rounded-md p-0.5", className)}>
         {options.map((o) => {
           const selected = o.value === value;
           const scale = 14 / Math.max(o.w, o.h);
@@ -44,7 +44,7 @@ export function RatioPicker({
               title={o.detail}
               onClick={() => onChange(o.value)}
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors",
+                "flex items-center gap-1.5 rounded-[5px] px-2.5 text-xs font-semibold transition-colors",
                 selected ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -62,7 +62,7 @@ export function RatioPicker({
   return (
     <div className={cn("space-y-1.5", className)}>
       {label && <span className="text-muted-foreground block text-xs">{label}</span>}
-      <div role="radiogroup" aria-label={label} className="bg-muted/60 inline-flex gap-1 rounded-xl p-1">
+      <div role="radiogroup" aria-label={label} className="bg-muted/60 inline-flex gap-1 rounded-md p-1">
         {options.map((o) => {
           const selected = o.value === value;
           const scale = 22 / Math.max(o.w, o.h);
@@ -74,7 +74,7 @@ export function RatioPicker({
               aria-checked={selected}
               onClick={() => onChange(o.value)}
               className={cn(
-                "flex min-w-20 flex-col items-center gap-1.5 rounded-lg px-3 py-2 transition-colors",
+                "flex min-w-20 flex-col items-center gap-1.5 rounded-[5px] px-3 py-2 transition-colors",
                 selected ? "bg-background text-foreground shadow-sm ring-1 ring-white/10" : "text-muted-foreground hover:text-foreground"
               )}
             >
