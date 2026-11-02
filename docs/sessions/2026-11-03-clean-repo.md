@@ -58,3 +58,12 @@
 - Video: settings panel on the left (prompt + preset chips, compact ratio, style select, 3/5/8 sn segmented duration, switch toggles, dashed image picker, submit pinned at the bottom; multi-scene mode uses the same pieces), grid of 16:9 video cards on the right. Thumbnails show the first frame (`#t=0.1`, `preload="metadata"`) and only play on hover; previously every video autoplayed at once. `StartImageSettings` is a compact two-select row showing labels instead of raw ids.
 - Seslendirme: full-height writer on the left (text, tone chips + custom instruction, voice select with gender/tone, preview, tag, Üret), clip library on the right with a generating placeholder.
 - Karşılaştır: create-style composer (Enter submits, compact ratio picker), the three result frames share the remaining height with contained images and the same generating/reveal motion as Oluştur.
+
+## Ambient background, scrollbar, start page, ComfyUI guide (same day)
+
+- Ambient background (`.igor-ambient` in the root layout): three faint radial color fields drifting on 70-90s loops, transform-only (no blur filter), off under reduced motion.
+- App-wide custom scrollbar via `::-webkit-scrollbar` only (standard `scrollbar-width/color` would disable it in Chromium): slim rounded inset thumb, red while dragging.
+- Create page: with history, the hero leaves ~9rem so the first gallery row peeks in, plus a "Galerin, N görsel" scroll hint and a gallery header. Recent-prompt chips are de-duplicated.
+- Desktop shell opens on `/` (Oluştur) instead of the editor.
+- ComfyUI guide at `/settings/comfyui` (linked from Settings and first-run setup): hardware check, portable download from GitHub releases, folder input, live model checklist from `src/lib/comfy-models.ts` via `/api/settings/models` (asks a running ComfyUI's `/models/<folder>`, else checks disk).
+- Launcher now detects git installs (`venv`/`.venv`) and the portable release (`python_embeded` + `ComfyUI\main.py`, root or inner folder).

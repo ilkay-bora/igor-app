@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, ExternalLink, Eye, EyeOff, Loader2, Play, Square, X } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Check, ExternalLink, Eye, EyeOff, Loader2, Play, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -180,6 +181,9 @@ export function SettingsForm({
             onChange={(comfy) => setData({ ...data, comfy })}
             disabled={dirty}
           />
+          <Link href="/settings/comfyui" className="text-primary inline-flex w-fit items-center gap-1 text-xs hover:underline">
+            ComfyUI kurulu değil mi? Adım adım kurulum rehberi <ArrowRight className="size-3" />
+          </Link>
         </div>
       </Section>
 

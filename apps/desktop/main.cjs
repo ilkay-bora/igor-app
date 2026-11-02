@@ -205,7 +205,7 @@ async function start() {
     expirationDate: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365,
   });
   createTray();
-  createMainWindow(`${base}/video/editor`);
+  createMainWindow(`${base}/`);
 }
 
 function fail(err) {

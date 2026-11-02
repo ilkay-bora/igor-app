@@ -16,23 +16,55 @@ const STARTUP_TIMEOUT_MS = 120_000;
 // dedupes concurrent generation requests into a single launch attempt.
 let launching: Promise<void> | null = null;
 
-function comfyDir(): string {
+export function comfyDir(): string {
   return getSetting("comfyuiDir") ?? path.resolve(process.cwd(), "..", "ComfyUI");
 }
 
-/**
- * Prefer the venv's pythonw.exe. The venv python.exe is only a launcher that
- * re-executes the base interpreter, and that child gets its own console
- * window even with windowsHide (Node can't hide a grandchild's console, and
- * detached spawns ignore windowsHide on Windows). pythonw is a GUI-subsystem
- * binary, so neither process ever opens a console. Output still goes to
- * data/comfyui.log through the redirected stdio handles.
- */
-function pythonPath(dir: string): string | null {
-  const scripts = path.join(dir, "venv", "Scripts");
+type ComfyLayout = {
+  /** Folder that holds main.py (its models/ folder lives here too). */
+  appDir: string;
+  python: string;
+  cwd: string;
+  args: string[];
+};
+
+function pickPython(scripts: string): string | null {
+  // Prefer pythonw.exe. A venv python.exe is only a launcher that
+  // re-executes the base interpreter, and that child gets its own console
+  // window even with windowsHide (Node can't hide a grandchild's console, and
+  // detached spawns ignore windowsHide on Windows). pythonw is a
+  // GUI-subsystem binary, so no process ever opens a console. Output still
+  // goes to data/comfyui.log through the redirected stdio handles.
   for (const exe of ["pythonw.exe", "python.exe"]) {
     const p = path.join(scripts, exe);
     if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
+/**
+ * Understands the three common Windows installs: a git clone with venv/ or
+ * .venv/, and the portable release from GitHub (python_embeded/ next to a
+ * ComfyUI/ folder), given either the portable root or its inner ComfyUI/.
+ */
+export function detectComfyLayout(dir: string): ComfyLayout | null {
+  for (const venv of ["venv", ".venv"]) {
+    const python = pickPython(path.join(dir, venv, "Scripts"));
+    if (python && fs.existsSync(path.join(dir, "main.py"))) {
+      return { appDir: dir, python, cwd: dir, args: ["main.py"] };
+    }
+  }
+  for (const root of [dir, path.dirname(dir)]) {
+    const python = pickPython(path.join(root, "python_embeded"));
+    const app = path.join(root, "ComfyUI");
+    if (python && fs.existsSync(path.join(app, "main.py"))) {
+      return {
+        appDir: app,
+        python,
+        cwd: root,
+        args: ["-s", path.join("ComfyUI", "main.py"), "--windows-standalone-build"],
+      };
+    }
   }
   return null;
 }
@@ -56,14 +88,14 @@ function portFromUrl(): string {
 
 function spawnComfy() {
   const dir = comfyDir();
-  const python = pythonPath(dir);
-  if (!python || !fs.existsSync(path.join(dir, "main.py"))) {
+  const layout = detectComfyLayout(dir);
+  if (!layout) {
     throw new Error(`ComfyUI bulunamadı: ${dir}. Ayarlar sayfasından ComfyUI klasörünü seç.`);
   }
   fs.mkdirSync(DATA_DIR, { recursive: true });
   const log = fs.openSync(LOG_FILE, "a");
-  const child = spawn(python, ["main.py", "--listen", "127.0.0.1", "--port", portFromUrl()], {
-    cwd: dir,
+  const child = spawn(layout.python, [...layout.args, "--listen", "127.0.0.1", "--port", portFromUrl()], {
+    cwd: layout.cwd,
     detached: true,
     windowsHide: true,
     stdio: ["ignore", log, log],
@@ -109,7 +141,7 @@ export async function comfyStatus(): Promise<ComfyStatus> {
   return {
     running: await isComfyUp(),
     dir,
-    dirValid: !!pythonPath(dir) && fs.existsSync(path.join(dir, "main.py")),
+    dirValid: !!detectComfyLayout(dir),
     ownedByIgor: fs.existsSync(PID_FILE),
   };
 }

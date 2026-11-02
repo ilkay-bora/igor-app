@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, Loader2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ElapsedTimer } from "@/components/elapsed-timer";
 import { Button } from "@/components/ui/button";
@@ -70,6 +70,7 @@ export default function Home() {
   const [tag, setTag] = useState("");
   const [filterTag, setFilterTag] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
+  const galleryRef = useRef<HTMLDivElement>(null);
 
   const allTags = collectTags(items);
   const visibleItems = filterTag === null ? items : items.filter((it) => it.tag === filterTag);
@@ -204,7 +205,13 @@ export default function Home() {
       <section
         className={cn(
           "flex flex-col items-center justify-center transition-[min-height,padding] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]",
-          hero ? "min-h-[calc(100dvh-3.5rem)] py-10" : "min-h-0 pt-6 pb-8"
+          // With history, leave ~9rem so the first gallery row peeks in and
+          // makes it obvious there is more below.
+          hero
+            ? items.length > 0
+              ? "min-h-[calc(100dvh-12.5rem)] py-10"
+              : "min-h-[calc(100dvh-3.5rem)] py-10"
+            : "min-h-0 pt-6 pb-8"
         )}
       >
         <div
@@ -289,7 +296,10 @@ export default function Home() {
               {text}
             </button>
           ))}
-          {recentPrompts.slice(0, 6).map((p) => (
+          {recentPrompts
+            .filter((p, i, all) => !PRESET_PROMPTS.includes(p.text) && all.findIndex((x) => x.text === p.text) === i)
+            .slice(0, 6)
+            .map((p) => (
             <button
               key={p.id}
               type="button"
@@ -301,13 +311,29 @@ export default function Home() {
             </button>
           ))}
         </div>
+
+        {hero && items.length > 0 && (
+          <button
+            type="button"
+            onClick={() => galleryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className="text-muted-foreground hover:text-foreground animate-in fade-in mt-8 flex flex-col items-center gap-1 text-xs transition-colors duration-700"
+          >
+            Galerin, {items.length} görsel
+            <ChevronDown className="igor-nudge size-4" />
+          </button>
+        )}
       </section>
 
-      <div className="mb-4">
+      <div ref={galleryRef} className="mb-4 flex scroll-mt-20 flex-wrap items-center gap-x-4 gap-y-2">
+        {items.length > 0 && (
+          <h2 className="flex items-baseline gap-2 text-sm font-semibold">
+            Galeri <span className="text-muted-foreground text-xs font-normal">{visibleItems.length} görsel</span>
+          </h2>
+        )}
         <TagFilter tags={allTags} active={filterTag} onChange={setFilterTag} />
       </div>
 
-      {visibleItems.length === 0 ? (
+      {hero && items.length === 0 ? null : visibleItems.length === 0 ? (
         <div className="text-muted-foreground flex flex-1 items-center justify-center py-24 text-center text-sm">
           {items.length === 0 ? "Galerin burada görünecek." : "Bu etikette henüz görsel yok."}
         </div>

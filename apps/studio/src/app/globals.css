@@ -123,31 +123,103 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* The ambient layer paints the page color itself; body stays transparent
+     so it shows through around the opaque cards. */
+  body:has(> .igor-ambient) {
+    background: transparent;
+  }
   html {
     @apply font-sans;
+    background: var(--background);
   }
 }
 
-/* Thin, theme-colored scrollbars for internal scroll containers (editor
-   library list, timeline strip) instead of the bulky default OS scrollbar. */
-.thin-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+/* App-wide custom scrollbar: slim rounded thumb that floats inside a
+   transparent track (the transparent border + padding-box clip makes it
+   look inset). Uses only the ::-webkit-scrollbar pseudo-elements on purpose:
+   in Chromium, setting the standard scrollbar-width/scrollbar-color turns
+   these off. `.thin-scrollbar` stays as a no-op hook for existing markup. */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
 }
-.thin-scrollbar::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-.thin-scrollbar::-webkit-scrollbar-track {
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
   background: transparent;
 }
-.thin-scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--border);
+::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklch, var(--foreground) 16%, transparent);
+  border: 3px solid transparent;
+  background-clip: padding-box;
   border-radius: 9999px;
+  min-height: 40px;
 }
-.thin-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: var(--muted-foreground);
+::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklch, var(--foreground) 30%, transparent);
 }
+::-webkit-scrollbar-thumb:active {
+  background-color: color-mix(in oklch, var(--primary) 70%, transparent);
+}
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Ambient background: three very soft color fields drifting on 60-90s loops
+   behind everything. Plain radial gradients moved with transform only (no
+   filter: blur), so it costs next to nothing while the GPU renders video. */
+.igor-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--background);
+}
+.igor-ambient span {
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 9999px;
+  will-change: transform;
+}
+.igor-ambient span:nth-child(1) {
+  top: -35vmax;
+  left: -20vmax;
+  background: radial-gradient(closest-side, color-mix(in oklch, var(--primary) 9%, transparent), transparent);
+  animation: igor-drift-a 70s ease-in-out infinite alternate;
+}
+.igor-ambient span:nth-child(2) {
+  bottom: -40vmax;
+  right: -25vmax;
+  background: radial-gradient(closest-side, oklch(0.55 0.12 280 / 7%), transparent);
+  animation: igor-drift-b 90s ease-in-out infinite alternate;
+}
+.igor-ambient span:nth-child(3) {
+  top: 30%;
+  left: 40%;
+  width: 45vmax;
+  height: 45vmax;
+  background: radial-gradient(closest-side, oklch(0.7 0.08 60 / 4%), transparent);
+  animation: igor-drift-c 80s ease-in-out infinite alternate;
+}
+@keyframes igor-drift-a {
+  to { transform: translate(18vmax, 14vmax) scale(1.15); }
+}
+@keyframes igor-drift-b {
+  to { transform: translate(-16vmax, -12vmax) scale(1.1); }
+}
+@keyframes igor-drift-c {
+  to { transform: translate(-22vmax, 10vmax) scale(0.85); }
+}
+@keyframes igor-nudge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+}
+.igor-nudge { animation: igor-nudge 2.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .igor-ambient span, .igor-nudge { animation: none; }
+}
+
 /* Create page motion: shimmer + indeterminate bar while a tile is generating,
    blur-to-sharp reveal when a freshly generated image lands. */
 @keyframes igor-shimmer {

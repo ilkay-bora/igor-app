@@ -18,6 +18,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="tr" className={`dark ${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
+        <div className="igor-ambient" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
         <SetupGate />
         <Nav />
         {children}
