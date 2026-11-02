@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent, type DragEv
 import Link from "next/link";
 import { ArrowLeftRight, AudioLines, Clapperboard, GripVertical, ImagePlus, Loader2, Mic, Music, Pause, Play, Plus, RectangleHorizontal, Scissors, Type, X } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Range } from "@/components/ui/range";
 import { Card, CardContent } from "@/components/ui/card";
 import { RatioPicker } from "@/components/ratio-picker";
 import { Badge } from "@/components/ui/badge";
@@ -149,8 +150,7 @@ function VolumeControl({ value, onChange }: { value: number; onChange: (v: numbe
   return (
     <span className="flex items-center gap-2">
       Ses seviyesi
-      <input
-        type="range"
+      <Range
         min={0}
         max={MAX_VOLUME}
         step={0.001}
@@ -359,6 +359,14 @@ function probeDuration(url: string, fallback: number): Promise<number> {
   });
 }
 
+/** 83.4 -> "1:23.4" */
+function formatClock(seconds: number): string {
+  const safe = Math.max(0, seconds);
+  const m = Math.floor(safe / 60);
+  const sec = safe - m * 60;
+  return `${m}:${sec.toFixed(1).padStart(4, "0")}`;
+}
+
 export default function EditorPage() {
   const [library, setLibrary] = useState<LibraryItem[]>([]);
   const [timeline, setTimeline] = useState<TimelineClip[]>([]);
@@ -419,6 +427,7 @@ export default function EditorPage() {
   const [previewGlobalTime, setPreviewGlobalTime] = useState(0);
   const [previewVolume, setPreviewVolume] = useState(1);
   const [scrubbing, setScrubbing] = useState(false);
+  const [scrubHover, setScrubHover] = useState<number | null>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const rulerRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<{
@@ -2074,18 +2083,64 @@ export default function EditorPage() {
                     setScrubbing(true);
                     handleProgressSeek(e.clientX);
                   }}
-                  className="bg-muted relative h-2.5 w-full cursor-pointer select-none rounded-full"
+                  onMouseMove={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setScrubHover(Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)));
+                  }}
+                  onMouseLeave={() => setScrubHover(null)}
+                  className="group/scrub relative flex h-5 w-full cursor-pointer items-center select-none"
+                  role="slider"
+                  aria-label="Oynatma konumu"
+                  aria-valuemin={0}
+                  aria-valuemax={Math.round(totalDuration * 10) / 10}
+                  aria-valuenow={Math.round(previewGlobalTime * 10) / 10}
                 >
-                  <div
-                    className="bg-primary absolute inset-y-0 left-0 rounded-full"
-                    style={{ width: `${totalDuration > 0 ? (previewGlobalTime / totalDuration) * 100 : 0}%` }}
-                  />
-                  <div
-                    className="bg-primary absolute top-1/2 size-3.5 -translate-y-1/2 rounded-full shadow"
-                    style={{
-                      left: `calc(${totalDuration > 0 ? (previewGlobalTime / totalDuration) * 100 : 0}% - 7px)`,
-                    }}
-                  />
+                  {(() => {
+                    const pct = totalDuration > 0 ? (previewGlobalTime / totalDuration) * 100 : 0;
+                    const active = scrubbing || scrubHover !== null;
+                    return (
+                      <>
+                        <div
+                          className={cn(
+                            "bg-foreground/15 relative w-full overflow-hidden rounded-full transition-[height] duration-150",
+                            active ? "h-1.5" : "h-1"
+                          )}
+                        >
+                          {scrubHover !== null && (
+                            <div
+                              className="bg-foreground/20 absolute inset-y-0 left-0"
+                              style={{ width: `${scrubHover * 100}%` }}
+                            />
+                          )}
+                          <div className="bg-primary absolute inset-y-0 left-0" style={{ width: `${pct}%` }} />
+                        </div>
+                        {/* Scene boundaries */}
+                        {totalDuration > 0 &&
+                          timeline.slice(1).map((c, i) => (
+                            <span
+                              key={c.key}
+                              className="bg-background/90 pointer-events-none absolute top-1/2 h-2.5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                              style={{ left: `${(cumulativeDurationBefore(i + 1) / totalDuration) * 100}%` }}
+                            />
+                          ))}
+                        <span
+                          className={cn(
+                            "ring-primary pointer-events-none absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-md ring-2 transition-transform duration-150",
+                            active ? "scale-100" : "scale-75"
+                          )}
+                          style={{ left: `${pct}%` }}
+                        />
+                        {scrubHover !== null && (
+                          <span
+                            className="bg-popover text-popover-foreground ring-foreground/10 pointer-events-none absolute bottom-full mb-1.5 -translate-x-1/2 rounded-sm px-1.5 py-0.5 text-[11px] font-medium tabular-nums shadow-md ring-1"
+                            style={{ left: `${scrubHover * 100}%` }}
+                          >
+                            {formatClock(scrubHover * totalDuration)}
+                          </span>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4">
@@ -2103,14 +2158,14 @@ export default function EditorPage() {
                     )}
                   </Button>
                   <span className="text-muted-foreground text-xs tabular-nums">
-                    {previewGlobalTime.toFixed(1)}sn / {totalDuration.toFixed(1)}sn · Sahne{" "}
+                    <span className="text-foreground font-medium">{formatClock(previewGlobalTime)}</span> /{" "}
+                    {formatClock(totalDuration)} · Sahne{" "}
                     {Math.min(previewIndex + 1, timeline.length)}/{timeline.length}
                   </span>
 
                   <label className="ml-auto flex items-center gap-2 text-xs">
                     Klip sesi
-                    <input
-                      type="range"
+                    <Range
                       min={0}
                       max={1}
                       step={0.05}
@@ -2191,8 +2246,7 @@ export default function EditorPage() {
                   <div className="flex flex-wrap items-center gap-4 text-xs">
                     <label className="flex items-center gap-2">
                       Yükseklik
-                      <input
-                        type="range"
+                      <Range
                         min={0.1}
                         max={0.92}
                         step={0.01}
@@ -2308,8 +2362,7 @@ export default function EditorPage() {
                     </Select>
                     <label className="flex items-center gap-2">
                       Boyut
-                      <input
-                        type="range"
+                      <Range
                         min={MIN_IMAGE_WIDTH}
                         max={MAX_IMAGE_WIDTH}
                         step={0.005}
@@ -2321,8 +2374,7 @@ export default function EditorPage() {
                     </label>
                     <label className="flex items-center gap-2">
                       Açı
-                      <input
-                        type="range"
+                      <Range
                         min={-180}
                         max={180}
                         value={selectedImage.rotation}
@@ -2340,8 +2392,7 @@ export default function EditorPage() {
                     {CROP_SIDES.map(({ side, label }) => (
                       <label key={side} className="flex items-center gap-2">
                         {label}
-                        <input
-                          type="range"
+                        <Range
                           min={0}
                           max={0.95}
                           step={0.005}
@@ -2387,8 +2438,7 @@ export default function EditorPage() {
                 </div>
                 <label className="text-muted-foreground flex items-center gap-2 text-xs">
                   Yakınlaştır
-                  <input
-                    type="range"
+                  <Range
                     min={4}
                     max={100}
                     value={pxPerSec}

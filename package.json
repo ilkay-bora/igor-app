@@ -10,10 +10,12 @@
   "scripts": {
     "dev": "npm run dev -w @igor/studio",
     "build": "npm run build -w @igor/studio",
+    "postbuild": "node scripts/desktop-shortcut.mjs",
     "lint": "npm run lint -w @igor/studio",
     "typecheck": "tsc --noEmit -p apps/studio",
     "desktop": "npm run start -w @igor/desktop",
-    "desktop:build": "npm run build && npm run start -w @igor/desktop"
+    "desktop:build": "npm run build && npm run start -w @igor/desktop",
+    "shortcut": "node scripts/desktop-shortcut.mjs"
   },
   "engines": {
     "node": ">=20"

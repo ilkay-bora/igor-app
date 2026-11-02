@@ -164,9 +164,10 @@
   display: none;
 }
 
-/* Ambient background: three very soft color fields drifting on 60-90s loops
-   behind everything. Plain radial gradients moved with transform only (no
-   filter: blur), so it costs next to nothing while the GPU renders video. */
+/* Ambient background: one oversized layer (150% of the viewport, so its
+   edges never enter the screen) painted with three very soft elliptical
+   gradients that fade to fully transparent, slowly panned on a 90s loop.
+   No element outlines, no blur filter, transform-only animation. */
 .igor-ambient {
   position: fixed;
   inset: 0;
@@ -175,49 +176,74 @@
   pointer-events: none;
   background: var(--background);
 }
-.igor-ambient span {
+.igor-ambient::before {
+  content: "";
   position: absolute;
-  width: 70vmax;
-  height: 70vmax;
-  border-radius: 9999px;
+  inset: -25%;
+  background:
+    radial-gradient(40% 35% at 20% 25%, color-mix(in oklch, var(--primary) 8%, transparent) 0%, transparent 100%),
+    radial-gradient(35% 40% at 80% 70%, oklch(0.55 0.12 280 / 6%) 0%, transparent 100%),
+    radial-gradient(30% 30% at 55% 45%, oklch(0.7 0.08 60 / 3%) 0%, transparent 100%);
+  animation: igor-pan 90s ease-in-out infinite alternate;
   will-change: transform;
 }
-.igor-ambient span:nth-child(1) {
-  top: -35vmax;
-  left: -20vmax;
-  background: radial-gradient(closest-side, color-mix(in oklch, var(--primary) 9%, transparent), transparent);
-  animation: igor-drift-a 70s ease-in-out infinite alternate;
+@keyframes igor-pan {
+  0% { transform: translate3d(-4%, -3%, 0) rotate(0deg); }
+  50% { transform: translate3d(3%, 2%, 0) rotate(4deg); }
+  100% { transform: translate3d(-2%, 4%, 0) rotate(-3deg); }
 }
-.igor-ambient span:nth-child(2) {
-  bottom: -40vmax;
-  right: -25vmax;
-  background: radial-gradient(closest-side, oklch(0.55 0.12 280 / 7%), transparent);
-  animation: igor-drift-b 90s ease-in-out infinite alternate;
+
+/* Themed range slider (components/ui/range.tsx). --fill is the value in %. */
+.igor-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 16px;
+  background: transparent;
+  cursor: pointer;
 }
-.igor-ambient span:nth-child(3) {
-  top: 30%;
-  left: 40%;
-  width: 45vmax;
-  height: 45vmax;
-  background: radial-gradient(closest-side, oklch(0.7 0.08 60 / 4%), transparent);
-  animation: igor-drift-c 80s ease-in-out infinite alternate;
+.igor-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--primary) 0%,
+    var(--primary) var(--fill, 0%),
+    color-mix(in oklch, var(--foreground) 15%, transparent) var(--fill, 0%)
+  );
 }
-@keyframes igor-drift-a {
-  to { transform: translate(18vmax, 14vmax) scale(1.15); }
+.igor-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 0 2px var(--primary), 0 1px 3px rgb(0 0 0 / 0.4);
+  transition: transform 0.15s ease;
 }
-@keyframes igor-drift-b {
-  to { transform: translate(-16vmax, -12vmax) scale(1.1); }
+.igor-range:hover::-webkit-slider-thumb,
+.igor-range:active::-webkit-slider-thumb {
+  transform: scale(1.15);
 }
-@keyframes igor-drift-c {
-  to { transform: translate(-22vmax, 10vmax) scale(0.85); }
+.igor-range:focus-visible {
+  outline: none;
 }
+.igor-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 2px var(--primary), 0 0 0 5px color-mix(in oklch, var(--primary) 35%, transparent);
+}
+.igor-range:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 @keyframes igor-nudge {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(3px); }
 }
 .igor-nudge { animation: igor-nudge 2.2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .igor-ambient span, .igor-nudge { animation: none; }
+  .igor-ambient::before, .igor-nudge { animation: none; }
 }
 
 /* Create page motion: shimmer + indeterminate bar while a tile is generating,

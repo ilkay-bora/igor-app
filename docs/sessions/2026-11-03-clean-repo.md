@@ -67,3 +67,11 @@
 - Desktop shell opens on `/` (Oluştur) instead of the editor.
 - ComfyUI guide at `/settings/comfyui` (linked from Settings and first-run setup): hardware check, portable download from GitHub releases, folder input, live model checklist from `src/lib/comfy-models.ts` via `/api/settings/models` (asks a running ComfyUI's `/models/<folder>`, else checks disk).
 - Launcher now detects git installs (`venv`/`.venv`) and the portable release (`python_embeded` + `ComfyUI\main.py`, root or inner folder).
+
+## Desktop shortcut, edge-free ambient, editor sliders and scrubber (same day)
+
+- `scripts/desktop-shortcut.mjs` creates or refreshes `IGOR.lnk` on the Windows desktop (targets Electron directly with `apps/desktop`, so no console window; app icon). Runs as root `postbuild`, or `npm run shortcut`. Never fails the build. A second click focuses the running window (single-instance lock).
+- Ambient background rebuilt as one oversized `::before` layer with gradients that fade to fully transparent, so no circle edge can show (the old round spans left a visible disc bottom right).
+- `components/ui/range.tsx` + `.igor-range`: themed slider (primary fill via `--fill`, white thumb with primary ring) replacing all 7 native blue range inputs in the editor.
+- Preview scrubber: thin track that thickens on hover, hover-preview fill, scene boundary ticks, time tooltip, ring thumb; clock shown as m:ss.s.
+- Testing note: checks ran against a separate `next start -p 3031` with all non-GET API calls stubbed, so the user's running app and `data/editor-draft.json` stayed untouched. Rebuilding `.next` under a running desktop app can break its navigation until it is restarted.
