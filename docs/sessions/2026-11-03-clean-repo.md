@@ -26,3 +26,10 @@
 - Fixed the editor's "Hizala" switch (thumb was positioned off the track).
 - New `RatioPicker` (drawn aspect frames) replaces the ratio/resolution dropdowns on Create, Video and Editor.
 - Pages use the full window width (max 1800px) instead of 4xl/6xl columns; gallery goes up to 6 columns.
+
+## Single-screen editor (same day)
+
+- Editor fills exactly one window, no page scroll: slim toolbar (title, clip count, compact ratio picker, save status, new/render buttons), then library | preview | inspector columns, then the full-width timeline (max 44% height, scrolls inside).
+- Preview is sized by a ResizeObserver to the largest frame that fits its column, for any output ratio.
+- Render list ("Düzenlemeler") moved into a "Render'lar" tab next to the library.
+- Fixed: preview time could read -0.0s right after a load, hiding every layer that starts at 0.

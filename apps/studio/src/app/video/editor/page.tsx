@@ -384,7 +384,12 @@ export default function EditorPage() {
   const [fullscreenUrl, setFullscreenUrl] = useState<string | null>(null);
 
   const totalDuration = timeline.reduce((sum, c) => sum + (c.trimEnd - c.trimStart), 0);
+  const [previewArea, setPreviewArea] = useState({ w: 0, h: 0 });
   const [resolutionWidth, resolutionHeight] = resolution.split("x").map(Number);
+  const previewWidth =
+    previewArea.w > 0 && previewArea.h > 0
+      ? Math.floor(Math.min(previewArea.w, previewArea.h * (resolutionWidth / resolutionHeight)))
+      : `min(100%, calc(40vh * ${resolutionWidth / resolutionHeight}))`;
 
   // Pre-render sequential preview: plays each trimmed clip back-to-back in
   // one <video>, keeps one <audio> per audio layer in step with it and shows
@@ -405,6 +410,8 @@ export default function EditorPage() {
   const preparedClipKeyRef = useRef<string | null>(null);
   const audioElsRef = useRef(new Map<string, HTMLAudioElement>());
   const previewBoxRef = useRef<HTMLDivElement>(null);
+  const previewAreaRef = useRef<HTMLDivElement>(null);
+  const [sideTab, setSideTab] = useState<"library" | "projects">("library");
   const timelineRef = useRef<TimelineClip[]>([]);
   const loadedClipKeyRef = useRef<string | null>(null);
   const [previewPlaying, setPreviewPlaying] = useState(false);
@@ -453,6 +460,18 @@ export default function EditorPage() {
     previewVideoRef.current.volume = previewVolume * Math.min(1, clip.volume ?? 1);
   }, [timeline, previewIndex, previewVolume]);
 
+  // The preview fills whatever room the single-screen layout leaves it.
+  const hasTimeline = timeline.length > 0;
+  useEffect(() => {
+    const el = previewAreaRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) =>
+      setPreviewArea({ w: entry.contentRect.width, h: entry.contentRect.height })
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasTimeline]);
+
   // Restored before saving starts, or the first save would wipe the draft
   // with this page's empty initial state.
   useEffect(() => {
@@ -496,7 +515,7 @@ export default function EditorPage() {
   function applyMotion(t: number) {
     const box = previewBoxRef.current;
     box?.querySelectorAll<HTMLElement>("[data-start]").forEach((el) => {
-      const visible = el.dataset.posed === "true" || (t >= Number(el.dataset.start) && t < Number(el.dataset.end));
+      const visible = el.dataset.posed === "true" || (Math.max(0, t) >= Number(el.dataset.start) && t < Number(el.dataset.end));
       el.style.visibility = visible ? "" : "hidden";
     });
     box?.querySelectorAll<HTMLElement>("[data-motion]").forEach((el) => {
@@ -693,7 +712,9 @@ export default function EditorPage() {
     const video = previewVideoRef.current;
     const clip = timelineRef.current[previewIndex];
     if (!video || !clip || scrubbing || transitionRef.current?.settling) return;
-    const globalTime = cumulativeDurationBefore(previewIndex) + (video.currentTime - clip.trimStart);
+    // Clamped: right after a load the video can still sit before trimStart,
+    // which read as -0.0s and hid every layer that starts at 0.
+    const globalTime = Math.max(0, cumulativeDurationBefore(previewIndex) + (video.currentTime - clip.trimStart));
     setPreviewGlobalTime(globalTime);
     if (transitionRef.current) return;
     if (!video.seeking && video.currentTime >= clip.trimEnd) advanceClip(video);
@@ -1649,17 +1670,179 @@ export default function EditorPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-[1800px] flex-1 flex-col gap-6 px-6 py-10">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Video Editörü</h1>
-        <p className="text-muted-foreground text-sm">
-          Klipleri kütüphaneden zaman çizelgesine sürükle, kenarlarından çekerek kırp, şerit, yazı
-          ve sesleri ayrı katman olarak ekle, tek videoda birleştir.
-        </p>
-      </header>
+    <main className="flex h-[calc(100dvh-65px)] w-full flex-col gap-3 overflow-hidden px-4 py-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-3">
+        <h1 className="text-base font-semibold tracking-tight">Video Editörü</h1>
+        <span className="text-muted-foreground text-xs tabular-nums">
+          {timeline.length} klip · {totalDuration.toFixed(1)}sn
+        </span>
+        <div className="ml-auto flex items-center gap-3">
+          <RatioPicker compact options={VIDEO_RESOLUTION_OPTIONS} value={resolution} onChange={setResolution} />
+          <span className="text-muted-foreground text-xs">{draftStatus}</span>
+          <Button variant="secondary" onClick={handleNewProject} disabled={timeline.length === 0}>
+            Yeni proje
+          </Button>
+          <Button onClick={handleRender} disabled={timeline.length === 0}>
+            Videoyu Oluştur
+          </Button>
+        </div>
+      </div>
+      <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)_340px] gap-3">
+        <Card size="sm" className="min-h-0">
+          <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
+            <div className="bg-muted/60 flex shrink-0 gap-1 rounded-lg p-1">
+              {(["library", "projects"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setSideTab(tab)}
+                  className={`flex-1 rounded-md px-2 py-1.5 text-xs font-semibold transition-colors ${
+                    sideTab === tab ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {tab === "library" ? "Kütüphane" : `Render'lar${projects.length ? ` (${projects.length})` : ""}`}
+                </button>
+              ))}
+            </div>
+            {sideTab === "library" ? (
+            <>
+            {library.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                Henüz eklenebilecek bitmiş video yok.{" "}
+                <Link href="/video" className="text-primary underline-offset-4 hover:underline">
+                  Video sayfasından
+                </Link>{" "}
+                üret.
+              </p>
+            ) : (
+              <div className="thin-scrollbar flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1">
+                {library.map((item, i) => (
+                  <div
+                    key={item.sourceUrl + i}
+                    draggable
+                    onDragStart={() => setDraggingLibrary(item)}
+                    onDragEnd={() => setDraggingLibrary(null)}
+                    className="border-border flex cursor-grab items-center gap-2 rounded-lg border p-2 active:cursor-grabbing"
+                  >
+                    <video
+                      src={item.sourceUrl}
+                      muted
+                      preload="metadata"
+                      className="h-12 w-16 shrink-0 rounded object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-1 text-xs">{item.label}</p>
+                      <Badge variant="secondary" className="mt-1 text-[10px]">
+                        {item.kind}
+                      </Badge>
+                    </div>
+                    <Button size="sm" variant="secondary" onClick={() => addToTimeline(item)}>
+                      <Plus className="size-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-muted-foreground text-[11px]">
+              Sürükleyip zaman çizelgesine bırakabilir, ya da + ile sona ekleyebilirsin.
+            </p>
+            </>
+            ) : (
+            <div className="thin-scrollbar flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1">
+              {projects.length === 0 && (
+                <p className="text-muted-foreground text-sm">Henüz render alınmadı.</p>
+              )}
+          {projects.map((project) => (
+            <Card key={project.id} size="sm" className="shrink-0">
+              <CardContent className="flex flex-col gap-2">
+                <div className="bg-muted flex aspect-video w-full shrink-0 items-center justify-center overflow-hidden rounded-md">
+                  {(project.status === "running" || project.status === "queued") && (
+                    <div className="flex flex-col items-center gap-2">
+                      <Loader2 className="text-primary size-6 animate-spin" />
+                      <span className="text-muted-foreground text-xs">Oluşturuluyor...</span>
+                      <ElapsedTimer since={project.createdAt} />
+                    </div>
+                  )}
+                  {project.status === "error" && (
+                    <span className="text-destructive line-clamp-4 p-3 text-center text-xs">
+                      {project.error}
+                    </span>
+                  )}
+                  {project.status === "done" && project.finalUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setFullscreenUrl(project.finalUrl!)}
+                      className="h-full w-full"
+                    >
+                      <video
+                        src={project.finalUrl}
+                        muted
+                        loop
+                        autoPlay
+                        className="h-full w-full object-cover"
+                      />
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-1 flex-col gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary">{project.clips.length} klip</Badge>
+                    {project.musicUrl && <Badge variant="secondary">Müzikli</Badge>}
+                    {project.voiceUrl && <Badge variant="secondary">Seslendirmeli</Badge>}
+                    {(project.audioLayers?.length ?? 0) > 0 && (
+                      <Badge variant="secondary">{project.audioLayers!.length} ses katmanı</Badge>
+                    )}
+                    {(project.imageLayers?.length ?? 0) > 0 && (
+                      <Badge variant="secondary">{project.imageLayers!.length} görsel</Badge>
+                    )}
+                    {(project.strips?.length ?? 0) > 0 && (
+                      <Badge variant="secondary">{project.strips!.length} şerit</Badge>
+                    )}
+                    {project.overlays.length > 0 && (
+                      <Badge variant="secondary">{project.overlays.length} yazı</Badge>
+                    )}
+                    <span className="text-muted-foreground w-full text-[11px]">
+                      {new Date(project.createdAt).toLocaleString("tr-TR")}
+                    </span>
+                  </div>
+                  <div className="mt-auto flex items-center gap-3">
+                    {(project.status === "done" || project.status === "error") && (
+                      <button
+                        type="button"
+                        onClick={() => handleEditProject(project)}
+                        className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+                      >
+                        Düzenle
+                      </button>
+                    )}
+                    {project.status === "done" && project.finalUrl && (
+                      <a
+                        href={project.finalUrl}
+                        download
+                        className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+                      >
+                        İndir
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteProject(project.id)}
+                      className="text-destructive text-sm font-medium underline-offset-4 hover:underline"
+                    >
+                      Sil
+                    </button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+            )}
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardContent className="flex flex-col gap-3 pt-6">
+      <Card size="sm" className="min-h-0">
+        <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold">Genel Önizleme</h2>
             <span className="text-muted-foreground text-xs tabular-nums">
@@ -1668,17 +1851,18 @@ export default function EditorPage() {
           </div>
 
           {timeline.length === 0 ? (
-            <div className="border-border text-muted-foreground flex h-40 items-center justify-center rounded-lg border-2 border-dashed text-sm">
+            <div className="border-border text-muted-foreground flex min-h-0 flex-1 items-center justify-center rounded-lg border-2 border-dashed text-sm">
               Önizlemek için zaman çizelgesine klip ekle
             </div>
           ) : (
             <>
+              <div ref={previewAreaRef} className="flex min-h-0 flex-1 items-center justify-center">
               <div
                 ref={previewBoxRef}
-                className="relative mx-auto max-w-3xl overflow-hidden rounded-lg bg-black"
+                className="relative overflow-hidden rounded-lg bg-black"
                 style={{
                   aspectRatio: `${resolutionWidth} / ${resolutionHeight}`,
-                  width: `min(100%, calc(60vh * ${resolutionWidth / resolutionHeight}))`,
+                  width: previewWidth,
                   containerType: "inline-size",
                 }}
               >
@@ -1870,6 +2054,7 @@ export default function EditorPage() {
                     );
                   })}
               </div>
+              </div>
               {audioLayers.map((l) => (
                 <audio
                   key={l.key}
@@ -1882,7 +2067,7 @@ export default function EditorPage() {
                 />
               ))}
 
-              <div className="mx-auto w-full max-w-3xl space-y-3">
+              <div className="w-full shrink-0 space-y-3">
                 <div
                   ref={progressBarRef}
                   onMouseDown={(e) => {
@@ -1942,56 +2127,257 @@ export default function EditorPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
-        <Card>
-          <CardContent className="flex flex-col gap-3 pt-6">
-            <h2 className="text-sm font-semibold">Kütüphane</h2>
-            {library.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                Henüz eklenebilecek bitmiş video yok.{" "}
-                <Link href="/video" className="text-primary underline-offset-4 hover:underline">
-                  Video sayfasından
-                </Link>{" "}
-                üret.
-              </p>
-            ) : (
-              <div className="thin-scrollbar flex max-h-[70vh] flex-col gap-2 overflow-y-auto pr-1">
-                {library.map((item, i) => (
-                  <div
-                    key={item.sourceUrl + i}
-                    draggable
-                    onDragStart={() => setDraggingLibrary(item)}
-                    onDragEnd={() => setDraggingLibrary(null)}
-                    className="border-border flex cursor-grab items-center gap-2 rounded-lg border p-2 active:cursor-grabbing"
-                  >
-                    <video
-                      src={item.sourceUrl}
-                      muted
-                      preload="metadata"
-                      className="h-12 w-16 shrink-0 rounded object-cover"
+        <div className="thin-scrollbar flex min-h-0 flex-col gap-3 overflow-y-auto">
+          {selectedClip && (
+            <Card size="sm" className="shrink-0">
+              <CardContent>
+                <h2 className="mb-3 text-sm font-semibold">Klip: {selectedClip.label}</h2>
+                <ClipPanel
+                  clip={selectedClip}
+                  onChange={(patch) => updateClip(selectedClip.key, patch)}
+                  onExtractAudio={() => extractClipAudio(selectedClip)}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          <Card size="sm" className="shrink-0">
+            <CardContent className="flex flex-col gap-4">
+              {selectedAudio && (
+                <div className="flex flex-col gap-3">
+                  <h3 className="text-sm font-semibold">Ses katmanı: {selectedAudio.label}</h3>
+                  <div className="flex flex-wrap items-center gap-4 text-xs">
+                    <VolumeControl
+                      key={selectedAudio.key}
+                      value={selectedAudio.volume}
+                      onChange={(volume) => updateAudioLayer(selectedAudio.key, { volume })}
                     />
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-1 text-xs">{item.label}</p>
-                      <Badge variant="secondary" className="mt-1 text-[10px]">
-                        {item.kind}
-                      </Badge>
-                    </div>
-                    <Button size="sm" variant="secondary" onClick={() => addToTimeline(item)}>
-                      <Plus className="size-3.5" />
+                    <label className="flex items-center gap-2">
+                      Başlangıç (sn)
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.1}
+                        value={Number(selectedAudio.start.toFixed(2))}
+                        onChange={(e) => updateAudioLayer(selectedAudio.key, { start: Math.max(0, Number(e.target.value)) })}
+                        className="border-input w-20 rounded border bg-transparent px-2 py-1"
+                      />
+                    </label>
+                    {selectedAudio.kind !== "extracted" && (
+                      <Toggle
+                        checked={selectedAudio.loop}
+                        onChange={(loop) => updateAudioLayer(selectedAudio.key, { loop })}
+                        label="Tekrarla"
+                      />
+                    )}
+                    <Button size="sm" variant="secondary" onClick={removeSelected} className="ml-auto">
+                      <X className="size-3.5" />
+                      Sil
                     </Button>
                   </div>
-                ))}
-              </div>
-            )}
-            <p className="text-muted-foreground text-[11px]">
-              Sürükleyip zaman çizelgesine bırakabilir, ya da + ile sona ekleyebilirsin.
-            </p>
-          </CardContent>
-        </Card>
+                </div>
+              )}
 
-        <div className="flex flex-col gap-6">
-          <Card>
-            <CardContent className="flex flex-col gap-3 pt-6">
+              {selectedStrip && (
+                <div className="flex flex-col gap-3">
+                  <h3 className="text-sm font-semibold">Şerit</h3>
+                  <input
+                    type="text"
+                    placeholder="Şerit yazısı (büyük harfe çevrilir, uzunsa iki satıra iner)"
+                    value={selectedStrip.text}
+                    onChange={(e) => updateStrip(selectedStrip.key, { text: e.target.value })}
+                    className="border-input rounded border bg-transparent px-2 py-1.5 text-sm"
+                  />
+                  <div className="flex flex-wrap items-center gap-4 text-xs">
+                    <label className="flex items-center gap-2">
+                      Yükseklik
+                      <input
+                        type="range"
+                        min={0.1}
+                        max={0.92}
+                        step={0.01}
+                        value={selectedStrip.yPct}
+                        onChange={(e) => updateStrip(selectedStrip.key, { yPct: Number(e.target.value) })}
+                        className="w-32"
+                      />
+                    </label>
+                    <Button size="sm" variant="secondary" onClick={removeSelected} className="ml-auto">
+                      <X className="size-3.5" />
+                      Sil
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {selectedText && (
+                <div className="flex flex-col gap-3">
+                  <h3 className="text-sm font-semibold">Yazı</h3>
+                  <input
+                    type="text"
+                    placeholder="Metin"
+                    value={selectedText.text}
+                    onChange={(e) => updateOverlay(selectedText.key, { text: e.target.value })}
+                    className="border-input rounded border bg-transparent px-2 py-1.5 text-sm"
+                  />
+                  <div className="flex flex-wrap items-center gap-4 text-xs">
+                    <Select
+                      value={selectedText.motion}
+                      onValueChange={(v) => v && updateOverlay(selectedText.key, { motion: v as MotionType })}
+                    >
+                      <SelectTrigger className="h-7 w-44 text-xs">
+                        <SelectValue>{(value: MotionType) => MOTIONS.find((m) => m.value === value)?.label}</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MOTIONS.map((m) => (
+                          <SelectItem key={m.value} value={m.value}>
+                            {m.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <label className="flex items-center gap-2">
+                      Boyut
+                      <input
+                        type="number"
+                        min={16}
+                        max={200}
+                        value={selectedText.fontSize}
+                        onChange={(e) => updateOverlay(selectedText.key, { fontSize: Number(e.target.value) || 48 })}
+                        className="border-input w-16 rounded border bg-transparent px-2 py-1"
+                      />
+                    </label>
+                    <label className="flex items-center gap-2">
+                      Renk
+                      <input
+                        type="color"
+                        value={selectedText.color}
+                        onChange={(e) => updateOverlay(selectedText.key, { color: e.target.value })}
+                        className="h-7 w-9 cursor-pointer bg-transparent"
+                      />
+                    </label>
+                    <div className="flex items-center gap-1">
+                      {(
+                        [
+                          ["top", "Üst"],
+                          ["center", "Orta"],
+                          ["bottom", "Alt"],
+                        ] as const
+                      ).map(([position, label]) => (
+                        <Button
+                          key={position}
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => updateOverlay(selectedText.key, { cx: 0.5, cy: TEXT_POSITION_Y[position] })}
+                        >
+                          {label}
+                        </Button>
+                      ))}
+                    </div>
+                    <Button size="sm" variant="secondary" onClick={removeSelected} className="ml-auto">
+                      <X className="size-3.5" />
+                      Sil
+                    </Button>
+                  </div>
+                  <p className="text-muted-foreground text-[11px]">
+                    {selectedText.motion === "marquee"
+                      ? "Kayan yazı ekranı boydan boya geçer, önizlemede yalnızca yukarı aşağı sürüklenir."
+                      : "Yerini önizlemede sürükleyerek ayarla."}{" "}
+                    Durdururken seçili katman sabit görünür, hareketini Önizle ile izlersin.
+                  </p>
+                </div>
+              )}
+
+              {selectedImage && (
+                <div className="flex flex-col gap-3">
+                  <h3 className="text-sm font-semibold">Görsel: {selectedImage.label}</h3>
+                  <div className="flex flex-wrap items-center gap-4 text-xs">
+                    <Select
+                      value={selectedImage.motion}
+                      onValueChange={(v) => v && updateImage(selectedImage.key, { motion: v as MotionType })}
+                    >
+                      <SelectTrigger className="h-7 w-44 text-xs">
+                        <SelectValue>{(value: MotionType) => MOTIONS.find((m) => m.value === value)?.label}</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MOTIONS.map((m) => (
+                          <SelectItem key={m.value} value={m.value}>
+                            {m.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <label className="flex items-center gap-2">
+                      Boyut
+                      <input
+                        type="range"
+                        min={MIN_IMAGE_WIDTH}
+                        max={MAX_IMAGE_WIDTH}
+                        step={0.005}
+                        value={selectedImage.widthPct}
+                        onChange={(e) => updateImage(selectedImage.key, { widthPct: Number(e.target.value) })}
+                        className="w-32"
+                      />
+                      {Math.round(selectedImage.widthPct * 100)}%
+                    </label>
+                    <label className="flex items-center gap-2">
+                      Açı
+                      <input
+                        type="range"
+                        min={-180}
+                        max={180}
+                        value={selectedImage.rotation}
+                        onChange={(e) => updateImage(selectedImage.key, { rotation: Number(e.target.value) })}
+                        className="w-32"
+                      />
+                      {selectedImage.rotation}°
+                    </label>
+                    <Button size="sm" variant="secondary" onClick={removeSelected} className="ml-auto">
+                      <X className="size-3.5" />
+                      Sil
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-4 text-xs">
+                    {CROP_SIDES.map(({ side, label }) => (
+                      <label key={side} className="flex items-center gap-2">
+                        {label}
+                        <input
+                          type="range"
+                          min={0}
+                          max={0.95}
+                          step={0.005}
+                          aria-label={`${label} kırpma`}
+                          value={(selectedImage.crop ?? NO_CROP)[side]}
+                          onChange={(e) => updateImage(selectedImage.key, cropPatch(selectedImage, side, Number(e.target.value)))}
+                          className="w-24"
+                        />
+                        {Math.round((selectedImage.crop ?? NO_CROP)[side] * 100)}%
+                      </label>
+                    ))}
+                    <Button size="sm" variant="secondary" onClick={() => resetCrop(selectedImage)}>
+                      Kırpmayı sıfırla
+                    </Button>
+                  </div>
+                  <p className="text-muted-foreground text-[11px]">
+                    Önizlemede ortasından sürükleyerek taşı, yuvarlak köşelerden boyutlandır, beyaz
+                    kenarlardan kırp. Durdururken seçili katman sabit görünür.
+                  </p>
+                </div>
+              )}
+
+              {!selectedLayer && (
+                <p className="text-muted-foreground text-xs">
+                  Çizelgedeki bir katmana tıklayınca ayarları burada açılır. Kenarlarından çekerek kırp,
+                  ortasından tutup kaydır, kesimlere ve diğer katmanlara kendiliğinden hizalanır. Ctrl+B oynatma çizgisinde böler, Delete siler, Boşluk oynatır.
+                </p>
+              )}
+
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+          <Card size="sm" className="max-h-[44%] min-h-0 shrink-0">
+            <CardContent className="thin-scrollbar flex min-h-0 flex-col gap-3 overflow-y-auto">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-sm font-semibold">
                   Zaman Çizelgesi ({timeline.length} klip{totalDuration > 0 && `, ~${totalDuration.toFixed(1)}sn`})
@@ -2389,355 +2775,6 @@ export default function EditorPage() {
             </CardContent>
           </Card>
 
-          {selectedClip && (
-            <Card>
-              <CardContent className="pt-6">
-                <h2 className="mb-3 text-sm font-semibold">Klip: {selectedClip.label}</h2>
-                <ClipPanel
-                  clip={selectedClip}
-                  onChange={(patch) => updateClip(selectedClip.key, patch)}
-                  onExtractAudio={() => extractClipAudio(selectedClip)}
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          <Card>
-            <CardContent className="flex flex-col gap-4 pt-6">
-              {selectedAudio && (
-                <div className="flex flex-col gap-3">
-                  <h3 className="text-sm font-semibold">Ses katmanı: {selectedAudio.label}</h3>
-                  <div className="flex flex-wrap items-center gap-4 text-xs">
-                    <VolumeControl
-                      key={selectedAudio.key}
-                      value={selectedAudio.volume}
-                      onChange={(volume) => updateAudioLayer(selectedAudio.key, { volume })}
-                    />
-                    <label className="flex items-center gap-2">
-                      Başlangıç (sn)
-                      <input
-                        type="number"
-                        min={0}
-                        step={0.1}
-                        value={Number(selectedAudio.start.toFixed(2))}
-                        onChange={(e) => updateAudioLayer(selectedAudio.key, { start: Math.max(0, Number(e.target.value)) })}
-                        className="border-input w-20 rounded border bg-transparent px-2 py-1"
-                      />
-                    </label>
-                    {selectedAudio.kind !== "extracted" && (
-                      <Toggle
-                        checked={selectedAudio.loop}
-                        onChange={(loop) => updateAudioLayer(selectedAudio.key, { loop })}
-                        label="Tekrarla"
-                      />
-                    )}
-                    <Button size="sm" variant="secondary" onClick={removeSelected} className="ml-auto">
-                      <X className="size-3.5" />
-                      Sil
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {selectedStrip && (
-                <div className="flex flex-col gap-3">
-                  <h3 className="text-sm font-semibold">Şerit</h3>
-                  <input
-                    type="text"
-                    placeholder="Şerit yazısı (büyük harfe çevrilir, uzunsa iki satıra iner)"
-                    value={selectedStrip.text}
-                    onChange={(e) => updateStrip(selectedStrip.key, { text: e.target.value })}
-                    className="border-input rounded border bg-transparent px-2 py-1.5 text-sm"
-                  />
-                  <div className="flex flex-wrap items-center gap-4 text-xs">
-                    <label className="flex items-center gap-2">
-                      Yükseklik
-                      <input
-                        type="range"
-                        min={0.1}
-                        max={0.92}
-                        step={0.01}
-                        value={selectedStrip.yPct}
-                        onChange={(e) => updateStrip(selectedStrip.key, { yPct: Number(e.target.value) })}
-                        className="w-32"
-                      />
-                    </label>
-                    <Button size="sm" variant="secondary" onClick={removeSelected} className="ml-auto">
-                      <X className="size-3.5" />
-                      Sil
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {selectedText && (
-                <div className="flex flex-col gap-3">
-                  <h3 className="text-sm font-semibold">Yazı</h3>
-                  <input
-                    type="text"
-                    placeholder="Metin"
-                    value={selectedText.text}
-                    onChange={(e) => updateOverlay(selectedText.key, { text: e.target.value })}
-                    className="border-input rounded border bg-transparent px-2 py-1.5 text-sm"
-                  />
-                  <div className="flex flex-wrap items-center gap-4 text-xs">
-                    <Select
-                      value={selectedText.motion}
-                      onValueChange={(v) => v && updateOverlay(selectedText.key, { motion: v as MotionType })}
-                    >
-                      <SelectTrigger className="h-7 w-44 text-xs">
-                        <SelectValue>{(value: MotionType) => MOTIONS.find((m) => m.value === value)?.label}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MOTIONS.map((m) => (
-                          <SelectItem key={m.value} value={m.value}>
-                            {m.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <label className="flex items-center gap-2">
-                      Boyut
-                      <input
-                        type="number"
-                        min={16}
-                        max={200}
-                        value={selectedText.fontSize}
-                        onChange={(e) => updateOverlay(selectedText.key, { fontSize: Number(e.target.value) || 48 })}
-                        className="border-input w-16 rounded border bg-transparent px-2 py-1"
-                      />
-                    </label>
-                    <label className="flex items-center gap-2">
-                      Renk
-                      <input
-                        type="color"
-                        value={selectedText.color}
-                        onChange={(e) => updateOverlay(selectedText.key, { color: e.target.value })}
-                        className="h-7 w-9 cursor-pointer bg-transparent"
-                      />
-                    </label>
-                    <div className="flex items-center gap-1">
-                      {(
-                        [
-                          ["top", "Üst"],
-                          ["center", "Orta"],
-                          ["bottom", "Alt"],
-                        ] as const
-                      ).map(([position, label]) => (
-                        <Button
-                          key={position}
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => updateOverlay(selectedText.key, { cx: 0.5, cy: TEXT_POSITION_Y[position] })}
-                        >
-                          {label}
-                        </Button>
-                      ))}
-                    </div>
-                    <Button size="sm" variant="secondary" onClick={removeSelected} className="ml-auto">
-                      <X className="size-3.5" />
-                      Sil
-                    </Button>
-                  </div>
-                  <p className="text-muted-foreground text-[11px]">
-                    {selectedText.motion === "marquee"
-                      ? "Kayan yazı ekranı boydan boya geçer, önizlemede yalnızca yukarı aşağı sürüklenir."
-                      : "Yerini önizlemede sürükleyerek ayarla."}{" "}
-                    Durdururken seçili katman sabit görünür, hareketini Önizle ile izlersin.
-                  </p>
-                </div>
-              )}
-
-              {selectedImage && (
-                <div className="flex flex-col gap-3">
-                  <h3 className="text-sm font-semibold">Görsel: {selectedImage.label}</h3>
-                  <div className="flex flex-wrap items-center gap-4 text-xs">
-                    <Select
-                      value={selectedImage.motion}
-                      onValueChange={(v) => v && updateImage(selectedImage.key, { motion: v as MotionType })}
-                    >
-                      <SelectTrigger className="h-7 w-44 text-xs">
-                        <SelectValue>{(value: MotionType) => MOTIONS.find((m) => m.value === value)?.label}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MOTIONS.map((m) => (
-                          <SelectItem key={m.value} value={m.value}>
-                            {m.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <label className="flex items-center gap-2">
-                      Boyut
-                      <input
-                        type="range"
-                        min={MIN_IMAGE_WIDTH}
-                        max={MAX_IMAGE_WIDTH}
-                        step={0.005}
-                        value={selectedImage.widthPct}
-                        onChange={(e) => updateImage(selectedImage.key, { widthPct: Number(e.target.value) })}
-                        className="w-32"
-                      />
-                      {Math.round(selectedImage.widthPct * 100)}%
-                    </label>
-                    <label className="flex items-center gap-2">
-                      Açı
-                      <input
-                        type="range"
-                        min={-180}
-                        max={180}
-                        value={selectedImage.rotation}
-                        onChange={(e) => updateImage(selectedImage.key, { rotation: Number(e.target.value) })}
-                        className="w-32"
-                      />
-                      {selectedImage.rotation}°
-                    </label>
-                    <Button size="sm" variant="secondary" onClick={removeSelected} className="ml-auto">
-                      <X className="size-3.5" />
-                      Sil
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-4 text-xs">
-                    {CROP_SIDES.map(({ side, label }) => (
-                      <label key={side} className="flex items-center gap-2">
-                        {label}
-                        <input
-                          type="range"
-                          min={0}
-                          max={0.95}
-                          step={0.005}
-                          aria-label={`${label} kırpma`}
-                          value={(selectedImage.crop ?? NO_CROP)[side]}
-                          onChange={(e) => updateImage(selectedImage.key, cropPatch(selectedImage, side, Number(e.target.value)))}
-                          className="w-24"
-                        />
-                        {Math.round((selectedImage.crop ?? NO_CROP)[side] * 100)}%
-                      </label>
-                    ))}
-                    <Button size="sm" variant="secondary" onClick={() => resetCrop(selectedImage)}>
-                      Kırpmayı sıfırla
-                    </Button>
-                  </div>
-                  <p className="text-muted-foreground text-[11px]">
-                    Önizlemede ortasından sürükleyerek taşı, yuvarlak köşelerden boyutlandır, beyaz
-                    kenarlardan kırp. Durdururken seçili katman sabit görünür.
-                  </p>
-                </div>
-              )}
-
-              {!selectedLayer && (
-                <p className="text-muted-foreground text-xs">
-                  Çizelgedeki bir katmana tıklayınca ayarları burada açılır. Kenarlarından çekerek kırp,
-                  ortasından tutup kaydır, kesimlere ve diğer katmanlara kendiliğinden hizalanır. Ctrl+B oynatma çizgisinde böler, Delete siler, Boşluk oynatır.
-                </p>
-              )}
-
-              <div className="border-border flex flex-wrap items-end gap-3 border-t pt-4">
-                <RatioPicker label="Çıktı boyutu" options={VIDEO_RESOLUTION_OPTIONS} value={resolution} onChange={setResolution} />
-                <div className="ml-auto flex items-center gap-3">
-                  <span className="text-muted-foreground text-xs">{draftStatus}</span>
-                  <Button variant="secondary" onClick={handleNewProject} disabled={timeline.length === 0}>
-                    Yeni proje
-                  </Button>
-                  <Button onClick={handleRender} disabled={timeline.length === 0}>
-                    Videoyu Oluştur
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {projects.length > 0 && (
-        <div className="flex flex-col gap-4">
-          <h2 className="text-lg font-semibold tracking-tight">Düzenlemeler</h2>
-          {projects.map((project) => (
-            <Card key={project.id}>
-              <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row">
-                <div className="bg-muted flex aspect-video w-full shrink-0 items-center justify-center overflow-hidden rounded-md sm:w-64">
-                  {(project.status === "running" || project.status === "queued") && (
-                    <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="text-primary size-6 animate-spin" />
-                      <span className="text-muted-foreground text-xs">Oluşturuluyor...</span>
-                      <ElapsedTimer since={project.createdAt} />
-                    </div>
-                  )}
-                  {project.status === "error" && (
-                    <span className="text-destructive line-clamp-4 p-3 text-center text-xs">
-                      {project.error}
-                    </span>
-                  )}
-                  {project.status === "done" && project.finalUrl && (
-                    <button
-                      type="button"
-                      onClick={() => setFullscreenUrl(project.finalUrl!)}
-                      className="h-full w-full"
-                    >
-                      <video
-                        src={project.finalUrl}
-                        muted
-                        loop
-                        autoPlay
-                        className="h-full w-full object-cover"
-                      />
-                    </button>
-                  )}
-                </div>
-                <div className="flex flex-1 flex-col gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="secondary">{project.clips.length} klip</Badge>
-                    {project.musicUrl && <Badge variant="secondary">Müzikli</Badge>}
-                    {project.voiceUrl && <Badge variant="secondary">Seslendirmeli</Badge>}
-                    {(project.audioLayers?.length ?? 0) > 0 && (
-                      <Badge variant="secondary">{project.audioLayers!.length} ses katmanı</Badge>
-                    )}
-                    {(project.imageLayers?.length ?? 0) > 0 && (
-                      <Badge variant="secondary">{project.imageLayers!.length} görsel</Badge>
-                    )}
-                    {(project.strips?.length ?? 0) > 0 && (
-                      <Badge variant="secondary">{project.strips!.length} şerit</Badge>
-                    )}
-                    {project.overlays.length > 0 && (
-                      <Badge variant="secondary">{project.overlays.length} yazı</Badge>
-                    )}
-                    <span className="text-muted-foreground ml-auto text-xs">
-                      {new Date(project.createdAt).toLocaleString("tr-TR")}
-                    </span>
-                  </div>
-                  <div className="mt-auto flex items-center gap-3">
-                    {(project.status === "done" || project.status === "error") && (
-                      <button
-                        type="button"
-                        onClick={() => handleEditProject(project)}
-                        className="text-primary text-sm font-medium underline-offset-4 hover:underline"
-                      >
-                        Düzenle
-                      </button>
-                    )}
-                    {project.status === "done" && project.finalUrl && (
-                      <a
-                        href={project.finalUrl}
-                        download
-                        className="text-primary text-sm font-medium underline-offset-4 hover:underline"
-                      >
-                        İndir
-                      </a>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteProject(project.id)}
-                      className="text-destructive text-sm font-medium underline-offset-4 hover:underline"
-                    >
-                      Sil
-                    </button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
 
       {fullscreenUrl && (
         <FullscreenViewer

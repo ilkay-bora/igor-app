@@ -19,13 +19,46 @@ export function RatioPicker({
   onChange,
   label,
   className,
+  compact,
 }: {
   options: RatioOption[];
   value: string;
   onChange: (value: string) => void;
   label?: string;
   className?: string;
+  /** Single-row variant for toolbars: shape + name, detail as tooltip. */
+  compact?: boolean;
 }) {
+  if (compact) {
+    return (
+      <div role="radiogroup" aria-label={label ?? "Oran"} className={cn("bg-muted/60 inline-flex gap-0.5 rounded-lg p-0.5", className)}>
+        {options.map((o) => {
+          const selected = o.value === value;
+          const scale = 14 / Math.max(o.w, o.h);
+          return (
+            <button
+              key={o.value}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              title={o.detail}
+              onClick={() => onChange(o.value)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors",
+                selected ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <span
+                className={cn("block rounded-[2px] border-[1.5px]", selected ? "border-primary bg-primary/15" : "border-current")}
+                style={{ width: Math.round(o.w * scale), height: Math.round(o.h * scale) }}
+              />
+              {o.name}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
   return (
     <div className={cn("space-y-1.5", className)}>
       {label && <span className="text-muted-foreground block text-xs">{label}</span>}
