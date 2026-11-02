@@ -30,11 +30,13 @@ IGOR runs on your own GPU. It generates images, video clips and voiceovers with 
 git clone https://github.com/ilkay-bora/igor-app.git
 cd igor-app
 npm install
-cp apps/studio/.env.example apps/studio/.env.local   # then edit it
 npm run desktop:build   # builds the studio and opens the desktop app
 ```
 
-After the first build, `npm run desktop` opens the app directly. The desktop app signs itself in with a local token and keeps running in the tray when you close the window, so queued jobs continue. `npm run dev` still runs the studio in a browser at http://localhost:3000 for development.
+- **First run** opens a short setup screen: paste your Gemini / Pollinations keys (optional) and point IGOR at your ComfyUI folder. Everything can be changed later under **Ayarlar** (settings). Values are stored locally in `apps/studio/data/settings.json`; `apps/studio/.env.local` still works as a fallback.
+- **No ComfyUI yet?** The in-app guide (Ayarlar, then "kurulum rehberi") walks through the portable release from GitHub, where each model file goes, and checks live which ones are installed. Git installs (`venv`/`.venv`) and the portable layout (`python_embeded`) are both detected, and IGOR starts ComfyUI in the background without a console window.
+- **Desktop shortcut**: every `npm run build` creates or refreshes an `IGOR` shortcut on your Windows desktop (`npm run shortcut` does it on demand). After that, open IGOR from the shortcut or with `npm run desktop`.
+- The app opens on the create page, signs itself in with a local token and keeps running in the tray when you close the window, so queued jobs continue. `npm run dev` runs the studio in a browser at http://localhost:3000 for development.
 
 ## Project layout
 
@@ -58,4 +60,4 @@ MIT. Model weights you download are covered by their own licenses.
 
 IGOR kendi GPU'nda çalışır. Lokal modellerle (ComfyUI üzerinden) ya da kendi API anahtarlarınla görsel, video ve seslendirme üretir, bunları ffmpeg ile MP4'e render eden bir timeline editörüne koyar. Geliştirilmekte olan MCP sunucusu sayesinde Claude Code, Cursor gibi agent'lar proje kurup düzenleyebilir, sen de aynı projeyi editörde açıp düzeltirsin.
 
-Kurulum için yukarıdaki "Getting started" adımlarını izle. Yol haritası: [docs/ROADMAP.md](docs/ROADMAP.md).
+Kurulum için yukarıdaki "Getting started" adımlarını izle. Kısaca: `npm install` ve `npm run desktop:build`. İlk açılışta API anahtarlarını ve ComfyUI klasörünü soran bir kurulum ekranı gelir, bunları sonra Ayarlar'dan değiştirebilirsin. ComfyUI kurulu değilse uygulamadaki rehber GitHub'dan indirmeyi ve model dosyalarını adım adım anlatır. Her build sonrası masaüstüne bir IGOR kısayolu konur. Yol haritası: [docs/ROADMAP.md](docs/ROADMAP.md).
