@@ -1,6 +1,7 @@
 // IGOR desktop shell: starts the studio's Next.js server as a child process,
-// signs the window in with a per-install local token, and keeps running in
-// the tray so generation/render queues survive closing the window.
+// signs the window in with a per-install local token. Closing the window
+// quits IGOR when nothing is running; with queued work it stays in the tray
+// (window freed) and quits by itself once the work is done.
 const { app, BrowserWindow, Tray, Menu, shell, session, nativeImage, dialog } = require("electron");
 const { spawn, execFile } = require("node:child_process");
 const crypto = require("node:crypto");
@@ -21,11 +22,19 @@ const STRINGS = {
     "Studio sunucusu beklenmedik şekilde kapandı (kod {code}). Uygulama kapanacak.",
     "The studio server stopped unexpectedly (code {code}). IGOR will close.",
   ],
-  trayTitle: ["IGOR arka planda çalışıyor", "IGOR is running in the background"],
+  trayTitle: ["IGOR işleri bitirince kapanacak", "IGOR will close when its jobs finish"],
   trayContent: [
-    "Kuyruktaki işler devam ediyor. Kapatmak için tepsi simgesinden Çıkış'ı seç.",
-    "Queued jobs keep running. To quit, choose Quit from the tray icon.",
+    "{n} iş devam ediyor. Bitince IGOR kendiliğinden kapanır, tepsi simgesinden tekrar açabilirsin.",
+    "{n} job(s) still running. IGOR quits by itself when they finish; reopen it from the tray icon.",
   ],
+  busyQuitTitle: ["Devam eden işler var", "Jobs are still running"],
+  busyQuitMessage: [
+    "{n} iş henüz bitmedi. Şimdi çıkarsan yarım kalırlar.",
+    "{n} job(s) have not finished. Quitting now cuts them off.",
+  ],
+  quitNow: ["Yine de çık", "Quit anyway"],
+  quitWhenDone: ["Bitince kapat", "Quit when done"],
+  cancel: ["Vazgeç", "Cancel"],
   open: ["IGOR'u aç", "Open IGOR"],
   editor: ["Editör", "Editor"],
   log: ["Günlük dosyasını aç", "Open log file"],
@@ -56,6 +65,9 @@ let mainWindow = null;
 let splash = null;
 let tray = null;
 let quitting = false;
+let baseUrl = "";
+let appToken = "";
+let autoQuitTimer = null;
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -117,7 +129,14 @@ function startServer(token) {
   // so no separate Node install is needed once packaged.
   server = spawn(process.execPath, args, {
     cwd: STUDIO_DIR,
-    env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", APP_TOKEN: token, IGOR_DESKTOP: "1" },
+    env: {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: "1",
+      APP_TOKEN: token,
+      IGOR_DESKTOP: "1",
+      // The server exits on its own if this process disappears.
+      IGOR_PARENT_PID: String(process.pid),
+    },
     windowsHide: true,
   });
   server.stdout.pipe(logFile);
@@ -128,6 +147,34 @@ function startServer(token) {
       quitApp();
     }
   });
+}
+
+// Number of jobs the studio is still working on (0 when it can't be reached).
+async function activeJobs() {
+  try {
+    const res = await fetch(`${baseUrl}/api/activity`, {
+      headers: { authorization: `Bearer ${appToken}` },
+      signal: AbortSignal.timeout(3000),
+    });
+    const a = await res.json();
+    return a.busy ? a.videoJobs + a.renders + a.merges + a.generations || 1 : 0;
+  } catch {
+    return 0;
+  }
+}
+
+// Stops the ComfyUI instance the studio started, so quitting IGOR frees its RAM/VRAM.
+async function stopComfy() {
+  try {
+    await fetch(`${baseUrl}/api/settings/comfy`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${appToken}`, "content-type": "application/json" },
+      body: JSON.stringify({ action: "stop" }),
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch {
+    // server already gone
+  }
 }
 
 function stopServer() {
@@ -175,18 +222,36 @@ function createMainWindow(url) {
     mainWindow.maximize();
     mainWindow.show();
   });
-  // Closing the window keeps IGOR in the tray so queued jobs keep running.
-  mainWindow.on("close", (e) => {
+  // Closing the window quits IGOR, unless jobs are still running: then the
+  // window is destroyed (its renderer is the biggest process) and IGOR waits
+  // in the tray until the work is done.
+  mainWindow.on("close", async (e) => {
     if (quitting) return;
     e.preventDefault();
-    mainWindow.hide();
-    tray?.displayBalloon?.({
-      title: tr("trayTitle"),
-      content: tr("trayContent"),
-      iconType: "info",
-    });
+    const n = await activeJobs();
+    if (!n) return quitApp();
+    mainWindow?.destroy();
+    tray?.displayBalloon?.({ title: tr("trayTitle"), content: tr("trayContent", { n }), iconType: "info" });
+    scheduleAutoQuit();
+  });
+  mainWindow.on("closed", () => {
+    mainWindow = null;
   });
   mainWindow.loadURL(url);
+}
+
+// While the window is closed, quit as soon as the studio has nothing left to do.
+function scheduleAutoQuit() {
+  if (autoQuitTimer) return;
+  autoQuitTimer = setInterval(async () => {
+    if (mainWindow) return cancelAutoQuit();
+    if (!(await activeJobs())) quitApp();
+  }, 15_000);
+}
+
+function cancelAutoQuit() {
+  clearInterval(autoQuitTimer);
+  autoQuitTimer = null;
 }
 
 function createTray() {
@@ -199,28 +264,62 @@ function createTray() {
       { type: "separator" },
       { label: tr("log"), click: () => shell.openPath(path.join(app.getPath("userData"), "studio.log")) },
       { type: "separator" },
-      { label: tr("quit"), click: quitApp },
+      { label: tr("quit"), click: confirmQuit },
     ])
   );
   tray.on("double-click", showMain);
 }
 
 function showMain() {
-  if (!mainWindow) return;
+  if (!baseUrl) return;
+  if (!mainWindow) {
+    cancelAutoQuit();
+    createMainWindow(`${baseUrl}/`);
+    return;
+  }
   if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.show();
   mainWindow.focus();
 }
 
 function openPath(p) {
-  if (!mainWindow) return;
-  mainWindow.loadURL(`http://127.0.0.1:${port}${p}`);
+  if (!baseUrl) return;
+  if (!mainWindow) {
+    cancelAutoQuit();
+    createMainWindow(`${baseUrl}${p}`);
+    return;
+  }
+  mainWindow.loadURL(`${baseUrl}${p}`);
   showMain();
+}
+
+// Tray "Quit": ask first when that would cut running jobs off.
+async function confirmQuit() {
+  const n = await activeJobs();
+  if (!n) return quitApp();
+  const { response } = await dialog.showMessageBox({
+    type: "warning",
+    title: "IGOR",
+    message: tr("busyQuitTitle"),
+    detail: tr("busyQuitMessage", { n }),
+    buttons: [tr("quitWhenDone"), tr("quitNow"), tr("cancel")],
+    defaultId: 0,
+    cancelId: 2,
+  });
+  if (response === 1) return quitApp();
+  if (response === 0) {
+    mainWindow?.destroy();
+    scheduleAutoQuit();
+  }
 }
 
 async function quitApp() {
   if (quitting) return;
   quitting = true;
+  cancelAutoQuit();
+  tray?.destroy();
+  mainWindow?.destroy();
+  if (baseUrl) await stopComfy();
   await stopServer();
   app.quit();
 }
@@ -232,7 +331,9 @@ async function start() {
   port = await freePort(3020);
   startServer(token);
   const base = `http://127.0.0.1:${port}`;
+  appToken = token;
   await waitForServer(`${base}/login`, DEV ? 180_000 : 60_000);
+  baseUrl = base;
   await session.defaultSession.cookies.set({
     url: base,
     name: "igor_token",

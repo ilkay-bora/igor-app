@@ -1,5 +1,6 @@
 import { comfyUrl } from "./settings";
 import { ensureComfyRunning } from "./comfy-launcher";
+import { trackActivity } from "./activity";
 import { uploadImageToComfy } from "./comfy-upload";
 import { tServer } from "@/lib/i18n-server";
 
@@ -123,7 +124,11 @@ function buildWorkflow(params: {
   };
 }
 
-export async function runComfyGeneration(params: {
+export function runComfyGeneration(params: Parameters<typeof generate>[0]): ReturnType<typeof generate> {
+  return trackActivity(() => generate(params));
+}
+
+async function generate(params: {
   prompt: string;
   width: number;
   height: number;

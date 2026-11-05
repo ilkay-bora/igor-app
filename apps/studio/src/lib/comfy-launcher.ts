@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { comfyUrl, getSetting } from "./settings";
 import { tServer } from "@/lib/i18n-server";
+import { getActivity, lastActive, markActive } from "@/lib/activity";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const LOG_FILE = path.join(DATA_DIR, "comfyui.log");
@@ -108,6 +109,7 @@ function spawnComfy() {
 }
 
 export async function ensureComfyRunning(): Promise<void> {
+  markActive();
   if (await isComfyUp()) return;
 
   if (!launching) {
@@ -162,4 +164,23 @@ export async function stopComfy(): Promise<boolean> {
   });
   fs.rmSync(PID_FILE, { force: true });
   return true;
+}
+
+// ComfyUI holds gigabytes of RAM and VRAM while it is up. When IGOR started
+// it and nothing has used it for a while, stop it; the next generation
+// starts it again (about a minute with large models).
+const IDLE_STOP_MS = 10 * 60_000;
+const IDLE_CHECK_MS = 30_000;
+
+export function startComfyIdleWatcher() {
+  const g = globalThis as unknown as { __igorComfyWatcher?: NodeJS.Timeout };
+  if (g.__igorComfyWatcher) return;
+  g.__igorComfyWatcher = setInterval(async () => {
+    if (launching || !fs.existsSync(PID_FILE)) return;
+    if ((await getActivity()).busy) return;
+    if (Date.now() - lastActive() < IDLE_STOP_MS) return;
+    if (await isComfyUp()) await stopComfy();
+    else fs.rmSync(PID_FILE, { force: true });
+  }, IDLE_CHECK_MS);
+  g.__igorComfyWatcher.unref();
 }
