@@ -5,6 +5,7 @@ import { FFMPEG_PATH } from "@/lib/ffmpeg-path";
 import { layoutStrip } from "@/lib/editor-strip";
 import { motionAngleExpr, type ImageCrop, type MotionType } from "@/lib/editor-motion";
 
+import { tServer } from "@/lib/i18n-server";
 const VIDEOS_DIR = path.join(process.cwd(), "public", "videos");
 // Bundled Inter (SIL OFL, see assets/fonts/Inter-OFL.txt), the same face the
 // editor preview uses, so rendered text matches what was positioned on screen
@@ -116,7 +117,7 @@ function runFfmpeg(args: string[]): Promise<void> {
     proc.stderr.on("data", (d) => (stderr += d.toString()));
     proc.on("close", (code) => {
       if (code === 0) resolve();
-      else reject(new Error(`ffmpeg hatası (kod ${code}): ${stderr.slice(-800)}`));
+      else reject(new Error(tServer("ffmpeg hatası (kod {code}): {v1}", { code, v1: stderr.slice(-800) })));
     });
     proc.on("error", reject);
   });

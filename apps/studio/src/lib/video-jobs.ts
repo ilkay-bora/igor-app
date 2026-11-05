@@ -4,6 +4,7 @@ import { runLTXVideoGeneration } from "@/lib/video-server";
 import { generateStartImage } from "@/lib/start-image";
 import { logErrorServer } from "@/lib/error-log-server";
 import { decodeImageDataUrl } from "@/lib/comfy-upload";
+import { tServer } from "@/lib/i18n-server";
 
 const STATE_PATH = path.join(process.cwd(), "data", "videos.json");
 const VIDEOS_DIR = path.join(process.cwd(), "public", "videos");
@@ -197,7 +198,7 @@ async function processQueue() {
           await logErrorServer({
             prompt: next.prompt,
             modelId: next.startImageProvider ?? "comfy-flux-schnell",
-            modelLabel: "Video başlangıç görseli",
+            modelLabel: tServer("Video başlangıç görseli"),
             message: err instanceof Error ? err.message : String(err),
           }).catch(() => undefined);
         }

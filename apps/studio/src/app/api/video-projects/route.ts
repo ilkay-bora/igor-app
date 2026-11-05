@@ -1,4 +1,5 @@
 import { enqueueProject, getProjects } from "@/lib/video-projects";
+import { tServer } from "@/lib/i18n-server";
 
 export async function GET() {
   return Response.json(await getProjects());
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "En az 2 sahne gerekli" }, { status: 400 });
   }
   if (scenes.some((s) => !s.prompt || !String(s.prompt).trim())) {
-    return Response.json({ error: "Her sahne için prompt gerekli" }, { status: 400 });
+    return Response.json({ error: tServer("Her sahne için prompt gerekli") }, { status: 400 });
   }
 
   try {

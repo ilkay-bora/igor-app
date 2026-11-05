@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
+import { tServer } from "@/lib/i18n-server";
 
 // The editor's work in progress, kept on disk so it survives restarts, a
 // changed desktop port (new origin = empty browser storage) and, later, agent
@@ -20,7 +21,7 @@ export async function PUT(request: Request) {
   try {
     JSON.parse(body);
   } catch {
-    return Response.json({ error: "Geçersiz taslak" }, { status: 400 });
+    return Response.json({ error: tServer("Geçersiz taslak") }, { status: 400 });
   }
   await fs.mkdir(path.dirname(DRAFT_FILE), { recursive: true });
   // Write-then-rename so a crash mid-write never leaves a half-written draft.

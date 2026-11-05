@@ -7,6 +7,7 @@ import {
   type EditorStripInput,
 } from "@/lib/editor-render";
 import type { ImageCrop, MotionType } from "@/lib/editor-motion";
+import { tServer } from "@/lib/i18n-server";
 
 const STATE_PATH = path.join(process.cwd(), "data", "editor-projects.json");
 const VIDEOS_DIR = path.join(process.cwd(), "public", "videos");
@@ -82,7 +83,7 @@ export async function getEditorProjects(): Promise<EditorProject[]> {
 
 function decodeDataUrl(dataUrl: string): { buffer: Buffer; ext: string } {
   const match = /^data:[^;]+;base64,(.+)$/.exec(dataUrl);
-  if (!match) throw new Error("Geçersiz ses verisi");
+  if (!match) throw new Error(tServer("Geçersiz ses verisi"));
   // Keep the browser-supplied extension out of the data URL itself — MIME
   // type alone doesn't reliably map to an extension ffmpeg needs, so callers
   // pass the filename's extension separately.
@@ -140,7 +141,7 @@ export async function enqueueEditorProject(params: {
     } else if (/^\/(videos|voices)\/[^/\\]+$/.test(layer.src)) {
       audioLayers.push(layer);
     } else {
-      throw new Error("Geçersiz ses katmanı kaynağı");
+      throw new Error(tServer("Geçersiz ses katmanı kaynağı"));
     }
   }
 
@@ -152,7 +153,7 @@ export async function enqueueEditorProject(params: {
     } else if (/^\/(strips|videos)\/[^/\\]+$/.test(layer.src)) {
       imageLayers.push(layer);
     } else {
-      throw new Error("Geçersiz görsel katmanı kaynağı");
+      throw new Error(tServer("Geçersiz görsel katmanı kaynağı"));
     }
   }
 

@@ -1,4 +1,5 @@
 import { getSetting } from "./settings";
+import { tServer } from "@/lib/i18n-server";
 export async function runPollinationsGeneration(params: {
   prompt: string;
   width: number;
@@ -17,7 +18,7 @@ export async function runPollinationsGeneration(params: {
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(`Pollinations hatası (${res.status}): ${text.slice(0, 300)}`);
+    throw new Error(tServer("Pollinations hatası ({status}): {v1}", { status: res.status, v1: text.slice(0, 300) }));
   }
 
   const buffer = Buffer.from(await res.arrayBuffer());

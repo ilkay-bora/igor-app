@@ -2,6 +2,7 @@ import { spawn } from "child_process";
 import fs from "fs";
 import path from "path";
 import { comfyUrl, getSetting } from "./settings";
+import { tServer } from "@/lib/i18n-server";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const LOG_FILE = path.join(DATA_DIR, "comfyui.log");
@@ -90,7 +91,7 @@ function spawnComfy() {
   const dir = comfyDir();
   const layout = detectComfyLayout(dir);
   if (!layout) {
-    throw new Error(`ComfyUI bulunamadı: ${dir}. Ayarlar sayfasından ComfyUI klasörünü seç.`);
+    throw new Error(tServer("ComfyUI bulunamadı: {dir}. Ayarlar sayfasından ComfyUI klasörünü seç.", { dir }));
   }
   fs.mkdirSync(DATA_DIR, { recursive: true });
   const log = fs.openSync(LOG_FILE, "a");
@@ -118,7 +119,7 @@ export async function ensureComfyRunning(): Promise<void> {
         if (await isComfyUp()) return;
       }
       throw new Error(
-        "ComfyUI otomatik başlatıldı ama 2 dakika içinde ayağa kalkmadı. Log: data/comfyui.log"
+        tServer("ComfyUI otomatik başlatıldı ama 2 dakika içinde ayağa kalkmadı. Log: data/comfyui.log")
       );
     })().finally(() => {
       launching = null;

@@ -3,6 +3,7 @@ import { spawn } from "child_process";
 import path from "path";
 import { promises as fs } from "fs";
 import { FFMPEG_PATH } from "@/lib/ffmpeg-path";
+import { tServer } from "@/lib/i18n-server";
 
 const MODEL = "gemini-3.1-flash-tts-preview";
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
@@ -88,7 +89,7 @@ function runFfmpeg(args: string[]): Promise<void> {
     proc.stderr.on("data", (d) => (stderr += d.toString()));
     proc.on("close", (code) => {
       if (code === 0) resolve();
-      else reject(new Error(`ffmpeg hatası (kod ${code}): ${stderr.slice(-500)}`));
+      else reject(new Error(tServer("ffmpeg hatası (kod {code}): {v1}", { code, v1: stderr.slice(-500) })));
     });
     proc.on("error", reject);
   });
@@ -96,7 +97,7 @@ function runFfmpeg(args: string[]): Promise<void> {
 
 function assertValidVoice(voice: string) {
   if (!(TTS_VOICES as readonly string[]).includes(voice)) {
-    throw new Error("Geçersiz ses");
+    throw new Error(tServer("Geçersiz ses"));
   }
 }
 
@@ -127,7 +128,7 @@ async function callGeminiTts(text: string, voice: string, apiKey: string): Promi
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data?.error?.message || `Gemini TTS hatası (${res.status})`);
+    throw new Error(data?.error?.message || tServer("Gemini TTS hatası ({status})", { status: res.status }));
   }
 
   const candidate = data?.candidates?.[0];
@@ -143,16 +144,16 @@ async function callGeminiTts(text: string, voice: string, apiKey: string): Promi
     const reasons: string[] = [];
     if (blockReason) reasons.push(`engellendi (${blockReason})`);
     if (finishReason && finishReason !== "STOP") reasons.push(`finishReason=${finishReason}`);
-    if (textPart) reasons.push(`ses yerine metin döndü: "${textPart.slice(0, 200)}"`);
+    if (textPart) reasons.push(tServer("ses yerine metin döndü: \"{v1}\"", { v1: textPart.slice(0, 200) }));
     if (bytes > TTS_MAX_BYTES) {
       reasons.push(
-        `metin ${bytes} bayt — Gemini TTS'in tek istekteki ${TTS_MAX_BYTES} bayt sınırını aşıyor, muhtemel sebep bu`
+        tServer("metin {bytes} bayt — Gemini TTS'in tek istekteki {TTS_MAX_BYTES} bayt sınırını aşıyor, muhtemel sebep bu", { bytes, TTS_MAX_BYTES })
       );
     }
     if (reasons.length === 0) {
-      reasons.push("Google rastgele küçük bir yüzdede sesi bulunmayan bir yanıt döndürebiliyor, tekrar denemek genelde çözer");
+      reasons.push(tServer("Google rastgele küçük bir yüzdede sesi bulunmayan bir yanıt döndürebiliyor, tekrar denemek genelde çözer"));
     }
-    throw new Error(`Gemini ses döndürmedi: ${reasons.join("; ")}`);
+    throw new Error(tServer("Gemini ses döndürmedi: {v1}", { v1: reasons.join("; ") }));
   }
   return parts;
 }
@@ -164,7 +165,7 @@ async function callGeminiTts(text: string, voice: string, apiKey: string): Promi
 async function synthesizeToFile(text: string, voice: string, outPath: string): Promise<void> {
   const apiKey = getSetting("geminiApiKey");
   if (!apiKey) {
-    throw new Error("Gemini API anahtarı girilmemiş. Ayarlar sayfasından ekleyebilirsin.");
+    throw new Error(tServer("Gemini API anahtarı girilmemiş. Ayarlar sayfasından ekleyebilirsin."));
   }
   if (!text.trim()) {
     throw new Error("Metin gerekli");
@@ -174,7 +175,7 @@ async function synthesizeToFile(text: string, voice: string, outPath: string): P
   const bytes = Buffer.byteLength(text, "utf8");
   if (bytes > TTS_MAX_BYTES) {
     throw new Error(
-      `Metin çok uzun (${bytes} bayt). Gemini TTS tek istekte en fazla ${TTS_MAX_BYTES} bayt (~700-800 kelime) kabul ediyor. Metni kısalt ya da birden fazla parçaya bölüp ayrı ayrı üret.`
+      tServer("Metin çok uzun ({bytes} bayt). Gemini TTS tek istekte en fazla {TTS_MAX_BYTES} bayt (~700-800 kelime) kabul ediyor. Metni kısalt ya da birden fazla parçaya bölüp ayrı ayrı üret.", { bytes, TTS_MAX_BYTES })
     );
   }
 

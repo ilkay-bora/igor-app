@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { gabarito } from "@/lib/fonts";
+import { t } from "@/lib/i18n";
 
 function LoginForm() {
   const router = useRouter();
@@ -25,7 +26,7 @@ function LoginForm() {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Giriş başarısız");
+      setError(data.error ?? t("Giriş başarısız"));
       setLoading(false);
       return;
     }
@@ -55,11 +56,11 @@ function LoginForm() {
     <main className="flex flex-1 items-center justify-center px-6">
       <Card className="w-full max-w-sm">
         <CardContent className="flex flex-col gap-4 pt-6">
-          <h1 className={`text-2xl font-bold ${gabarito.className}`}>IGOR</h1>
+          <h1 className={`text-2xl font-bold ${gabarito.className}`}>{t("IGOR")}</h1>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
               type="password"
-              placeholder="Erişim token'ı"
+              placeholder={t("Erişim token'ı")}
               value={token}
               onChange={(e) => setToken(e.target.value)}
               autoFocus
@@ -67,11 +68,11 @@ function LoginForm() {
             />
             {error && <p className="text-destructive text-sm">{error}</p>}
             <p className="text-muted-foreground text-xs">
-              Token, sunucu açılırken terminale basılan giriş linkinde ve{" "}
-              <code>apps/studio/data/local-token</code> dosyasında.
+              {t("Token, sunucu açılırken terminale basılan giriş linkinde ve")}{" "}
+              <code>{t("apps/studio/data/local-token")}</code> {t("dosyasında.")}
             </p>
             <Button type="submit" disabled={!token || loading}>
-              {loading ? "Kontrol ediliyor..." : "Giriş yap"}
+              {loading ? t("Kontrol ediliyor...") : t("Giriş yap")}
             </Button>
           </form>
         </CardContent>

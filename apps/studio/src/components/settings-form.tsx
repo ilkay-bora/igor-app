@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ArrowRight, Check, ExternalLink, Eye, EyeOff, Loader2, Play, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { LANGS, currentLang, t } from "@/lib/i18n";
+import { changeLanguage } from "@/components/language-provider";
 
 type Source = "saved" | "env" | "default" | "none";
 type SecretView = { set: boolean; source: Source; hint: string };
@@ -70,7 +72,7 @@ export function SettingsForm({
   if (!data) {
     return (
       <div className="text-muted-foreground flex items-center gap-2 py-16 text-sm">
-        <Loader2 className="size-4 animate-spin" /> Ayarlar yükleniyor
+        <Loader2 className="size-4 animate-spin" /> {t("Ayarlar yükleniyor")}
       </div>
     );
   }
@@ -122,13 +124,31 @@ export function SettingsForm({
 
   return (
     <div className="flex flex-col gap-4">
+      <Section title={t("Dil")} description={t("Arayüz dili. Değiştirince sayfa yeniden yüklenir.")}>
+        <div className="bg-muted/50 inline-flex rounded-md p-1">
+          {LANGS.map((l) => (
+            <button
+              key={l.value}
+              type="button"
+              onClick={() => l.value !== currentLang() && changeLanguage(l.value)}
+              className={cn(
+                "rounded-sm px-3 py-1.5 text-sm font-medium transition-colors",
+                l.value === currentLang() ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      </Section>
+
       <Section
-        title="Gemini"
-        description="Gemini görsel modeli ve Seslendirme sayfası bu anahtarı kullanır. Google AI Studio'dan ücretsiz alınabilir."
-        badge="Opsiyonel"
+        title={t("Gemini")}
+        description={t("Gemini görsel modeli ve Seslendirme sayfası bu anahtarı kullanır. Google AI Studio'dan ücretsiz alınabilir.")}
+        badge={t("Opsiyonel")}
       >
         <SecretField
-          label="API anahtarı"
+          label={t("API anahtarı")}
           value={gemini}
           onChange={setGemini}
           view={data.geminiApiKey}
@@ -139,12 +159,12 @@ export function SettingsForm({
       </Section>
 
       <Section
-        title="Pollinations"
-        description="Ücretsiz bulut görsel modeli. Anahtarsız da çalışır, anahtarla daha hızlı ve güvenilir olur."
-        badge="Opsiyonel"
+        title={t("Pollinations")}
+        description={t("Ücretsiz bulut görsel modeli. Anahtarsız da çalışır, anahtarla daha hızlı ve güvenilir olur.")}
+        badge={t("Opsiyonel")}
       >
         <SecretField
-          label="API anahtarı"
+          label={t("API anahtarı")}
           value={pollinations}
           onChange={setPollinations}
           view={data.pollinationsApiKey}
@@ -154,25 +174,25 @@ export function SettingsForm({
       </Section>
 
       <Section
-        title="Yerel ComfyUI"
-        description="Kendi ekran kartında ücretsiz görsel ve video üretimi için. IGOR gerektiğinde arka planda, pencere açmadan başlatır."
+        title={t("Yerel ComfyUI")}
+        description={t("Kendi ekran kartında ücretsiz görsel ve video üretimi için. IGOR gerektiğinde arka planda, pencere açmadan başlatır.")}
       >
         <div className="flex flex-col gap-3">
-          <Field label="ComfyUI klasörü" hint="main.py ve venv klasörünün bulunduğu yer">
+          <Field label={t("ComfyUI klasörü")} hint={t("main.py ve venv klasörünün bulunduğu yer")}>
             <input
               className={inputClass}
               value={comfyDir ?? data.comfyuiDir.value}
               onChange={(e) => setComfyDir(e.target.value)}
-              placeholder="E:\ComfyUI"
+              placeholder={t("E:\\ComfyUI")}
               spellCheck={false}
             />
           </Field>
-          <Field label="Adres" hint="Genelde değiştirmen gerekmez">
+          <Field label={t("Adres")} hint={t("Genelde değiştirmen gerekmez")}>
             <input
               className={inputClass}
               value={comfyUrl ?? data.comfyuiUrl.value}
               onChange={(e) => setComfyUrl(e.target.value)}
-              placeholder="http://127.0.0.1:8188"
+              placeholder={t("http://127.0.0.1:8188")}
               spellCheck={false}
             />
           </Field>
@@ -182,7 +202,7 @@ export function SettingsForm({
             disabled={dirty}
           />
           <Link href="/settings/comfyui" className="text-primary inline-flex w-fit items-center gap-1 text-xs hover:underline">
-            ComfyUI kurulu değil mi? Adım adım kurulum rehberi <ArrowRight className="size-3" />
+            {t("ComfyUI kurulu değil mi? Adım adım kurulum rehberi")} <ArrowRight className="size-3" />
           </Link>
         </div>
       </Section>
@@ -191,24 +211,24 @@ export function SettingsForm({
         {error && <span className="text-destructive text-sm">{error}</span>}
         {!error && savedAt && !dirty && mode === "settings" && (
           <span className="text-muted-foreground flex items-center gap-1 text-sm">
-            <Check className="size-4 text-emerald-500" /> Kaydedildi
+            <Check className="size-4 text-emerald-500" /> {t("Kaydedildi")}
           </span>
         )}
         <div className="ml-auto flex items-center gap-2">
           {mode === "setup" ? (
             <>
               <Button variant="ghost" onClick={async () => (await save({ setupDone: true })) && onDone?.()} disabled={saving}>
-                Şimdilik atla
+                {t("Şimdilik atla")}
               </Button>
               <Button onClick={async () => (await save({ setupDone: true })) && onDone?.()} disabled={saving}>
                 {saving && <Loader2 className="animate-spin" data-icon="inline-start" />}
-                Kurulumu tamamla
+                {t("Kurulumu tamamla")}
               </Button>
             </>
           ) : (
             <Button onClick={() => save()} disabled={saving || !dirty}>
               {saving && <Loader2 className="animate-spin" data-icon="inline-start" />}
-              Kaydet
+              {t("Kaydet")}
             </Button>
           )}
         </div>
@@ -288,7 +308,7 @@ function SecretField({
     <div className="flex flex-col gap-2">
       <Field
         label={label}
-        hint={view.set ? `•••• ${view.hint} ${SOURCE_LABEL[view.source]}` : "girilmemiş"}
+        hint={view.set ? `•••• ${view.hint} ${t(SOURCE_LABEL[view.source])}` : t("girilmemiş")}
       >
         <div className="flex gap-2">
           <div className="relative min-w-0 flex-1">
@@ -300,14 +320,14 @@ function SecretField({
                 onChange(e.target.value);
                 setTest(null);
               }}
-              placeholder={view.set ? "Değiştirmek için yeni anahtarı yapıştır" : "Anahtarı yapıştır"}
+              placeholder={view.set ? t("Değiştirmek için yeni anahtarı yapıştır") : t("Anahtarı yapıştır")}
               autoComplete="off"
               spellCheck={false}
             />
             <button
               type="button"
               onClick={() => setShow((s) => !s)}
-              aria-label={show ? "Gizle" : "Göster"}
+              aria-label={show ? t("Gizle") : t("Göster")}
               className="text-muted-foreground hover:text-foreground absolute inset-y-0 right-0 flex w-9 items-center justify-center"
             >
               {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -316,18 +336,18 @@ function SecretField({
           {testable && (
             <Button variant="outline" onClick={runTest} disabled={test === "running" || (!value.trim() && !view.set)}>
               {test === "running" && <Loader2 className="animate-spin" data-icon="inline-start" />}
-              Test et
+              {t("Test et")}
             </Button>
           )}
         </div>
       </Field>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
         <a href={getUrl} target="_blank" rel="noreferrer" className="text-primary inline-flex items-center gap-1 hover:underline">
-          Anahtar al <ExternalLink className="size-3" />
+          {t("Anahtar al")} <ExternalLink className="size-3" />
         </a>
         {onClear && (
           <button type="button" onClick={onClear} className="text-muted-foreground hover:text-destructive">
-            Kayıtlı anahtarı sil
+            {t("Kayıtlı anahtarı sil")}
           </button>
         )}
         {test && test !== "running" && (
@@ -377,23 +397,23 @@ function ComfyControls({
             state === "running" ? "bg-emerald-500" : state === "stopped" ? "bg-muted-foreground" : "bg-destructive"
           )}
         />
-        {state === "running" ? "Çalışıyor" : state === "stopped" ? "Kapalı, gerektiğinde otomatik başlar" : "Bu klasörde ComfyUI bulunamadı"}
+        {state === "running" ? t("Çalışıyor") : state === "stopped" ? t("Kapalı, gerektiğinde otomatik başlar") : t("Bu klasörde ComfyUI bulunamadı")}
       </span>
       <div className="ml-auto flex gap-2">
         {state === "stopped" && (
           <Button variant="outline" size="sm" onClick={() => act("start")} disabled={!!busy || disabled}>
             {busy === "start" ? <Loader2 className="animate-spin" data-icon="inline-start" /> : <Play data-icon="inline-start" />}
-            {busy === "start" ? "Başlatılıyor" : "Başlat"}
+            {busy === "start" ? t("Başlatılıyor") : t("Başlat")}
           </Button>
         )}
         {state === "running" && status.ownedByIgor && (
           <Button variant="outline" size="sm" onClick={() => act("stop")} disabled={!!busy}>
             {busy === "stop" ? <Loader2 className="animate-spin" data-icon="inline-start" /> : <Square data-icon="inline-start" />}
-            Durdur ve belleği boşalt
+            {t("Durdur ve belleği boşalt")}
           </Button>
         )}
       </div>
-      {disabled && state === "stopped" && <p className="text-muted-foreground w-full text-xs">Başlatmadan önce değişiklikleri kaydet.</p>}
+      {disabled && state === "stopped" && <p className="text-muted-foreground w-full text-xs">{t("Başlatmadan önce değişiklikleri kaydet.")}</p>}
       {error && <p className="text-destructive w-full text-xs">{error}</p>}
     </div>
   );

@@ -1,5 +1,6 @@
 import { generateVoiceClip, getVoiceClips } from "@/lib/tts-server";
 import { logErrorServer } from "@/lib/error-log-server";
+import { tServer } from "@/lib/i18n-server";
 
 export async function GET() {
   return Response.json(await getVoiceClips());
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Metin gerekli" }, { status: 400 });
   }
   if (!voice) {
-    return Response.json({ error: "Ses seçimi gerekli" }, { status: 400 });
+    return Response.json({ error: tServer("Ses seçimi gerekli") }, { status: 400 });
   }
 
   try {

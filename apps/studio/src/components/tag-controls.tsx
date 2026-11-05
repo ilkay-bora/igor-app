@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import { normalizeTag } from "@/lib/providers";
+import { t } from "@/lib/i18n";
 
 /** Free-text tag field with suggestions from tags already in use. */
 export function TagInput({
@@ -21,8 +22,8 @@ export function TagInput({
   const listId = useId();
   const datalist = (
     <datalist id={listId}>
-      {suggestions.map((t) => (
-        <option key={t} value={t} />
+      {suggestions.map((tag) => (
+        <option key={tag} value={tag} />
       ))}
     </datalist>
   );
@@ -36,7 +37,7 @@ export function TagInput({
           onBlur={(e) => onChange(normalizeTag(e.target.value))}
           list={listId}
           aria-label={label}
-          placeholder="etiket"
+          placeholder={t("etiket")}
           maxLength={40}
           className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent outline-none"
         />
@@ -52,7 +53,7 @@ export function TagInput({
         onChange={(e) => onChange(e.target.value)}
         onBlur={(e) => onChange(normalizeTag(e.target.value))}
         list={listId}
-        placeholder="opsiyonel"
+        placeholder={t("opsiyonel")}
         maxLength={40}
         className="border-input bg-background focus-visible:ring-ring/50 h-9 w-full rounded-md border px-3 text-sm outline-none focus-visible:ring-[3px]"
       />
@@ -79,11 +80,11 @@ export function TagFilter({
   return (
     <div className="flex flex-wrap gap-1.5">
       <button type="button" onClick={() => onChange(null)} className={chip(active === null)}>
-        Tümü
+        {t("Tümü")}
       </button>
-      {tags.map((t) => (
-        <button key={t} type="button" onClick={() => onChange(t)} className={chip(active === t)}>
-          #{t}
+      {tags.map((tag) => (
+        <button key={tag} type="button" onClick={() => onChange(tag)} className={chip(active === tag)}>
+          #{tag}
         </button>
       ))}
     </div>

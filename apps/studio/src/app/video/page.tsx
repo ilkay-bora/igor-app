@@ -31,6 +31,7 @@ import {
   toErrorMessage,
   type VideoProject,
 } from "@/lib/providers";
+import { locale, t } from "@/lib/i18n";
 
 const REFERENCE_STEPS = 8;
 
@@ -207,7 +208,7 @@ export default function VideoPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm("Bu videoyu silmek istediğine emin misin?")) return;
+    if (!window.confirm(t("Bu videoyu silmek istediğine emin misin?"))) return;
     await fetch(`/api/video/${id}`, { method: "DELETE" });
     await load();
   }
@@ -268,7 +269,7 @@ export default function VideoPage() {
   }
 
   async function handleDeleteProject(id: string) {
-    if (!window.confirm("Bu projeyi silmek istediğine emin misin?")) return;
+    if (!window.confirm(t("Bu projeyi silmek istediğine emin misin?"))) return;
     await deleteVideoProject(id);
     await loadProjects();
   }
@@ -282,14 +283,14 @@ export default function VideoPage() {
       <section className="bg-card ring-foreground/10 flex min-h-0 flex-col rounded-lg ring-1">
         <div className="border-border/60 flex items-center justify-between gap-3 border-b px-4 py-3">
           <div className="min-w-0">
-            <h1 className="text-base font-semibold">Video</h1>
-            <p className="text-muted-foreground truncate text-xs">Yerel LTX-2.3, sırayla arka planda üretilir</p>
+            <h1 className="text-base font-semibold">{t("Video")}</h1>
+            <p className="text-muted-foreground truncate text-xs">{t("Yerel LTX-2.3, sırayla arka planda üretilir")}</p>
           </div>
           <div className="bg-muted/60 inline-flex h-9 shrink-0 gap-0.5 rounded-md p-0.5">
             {(
               [
-                ["single", "Tek video"],
-                ["project", "Çoklu sahne"],
+                ["single", t("Tek video")],
+                ["project", t("Çoklu sahne")],
               ] as const
             ).map(([m, label]) => (
               <button
@@ -312,7 +313,7 @@ export default function VideoPage() {
             <>
               <div className="border-input focus-within:border-ring rounded-md border transition-colors">
                 <textarea
-                  placeholder="Ne olsun? Örn: a cat walking on a beach at sunset, cinematic"
+                  placeholder={t("Ne olsun? Örn: a cat walking on a beach at sunset, cinematic")}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   rows={4}
@@ -333,8 +334,8 @@ export default function VideoPage() {
                 </div>
               </div>
 
-              <Group label="Görüntü">
-                <RatioPicker compact label="Çözünürlük" options={VIDEO_RESOLUTION_OPTIONS} value={resolution} onChange={setResolution} />
+              <Group label={t("Görüntü")}>
+                <RatioPicker compact label={t("Çözünürlük")} options={VIDEO_RESOLUTION_OPTIONS} value={resolution} onChange={setResolution} />
                 <div className="grid grid-cols-2 gap-2">
                   <StyleSelect
                     value={styleId}
@@ -347,12 +348,12 @@ export default function VideoPage() {
                 </div>
               </Group>
 
-              <Group label="Seçenekler">
+              <Group label={t("Seçenekler")}>
                 <ToggleRow
                   checked={useStartImage}
                   onChange={setUseStartImage}
-                  title="Önce görsel üret, sonra canlandır"
-                  hint="Stil çok daha iyi korunur, yaklaşık 1 dk ekler"
+                  title={t("Önce görsel üret, sonra canlandır")}
+                  hint={t("Stil çok daha iyi korunur, yaklaşık 1 dk ekler")}
                 />
                 {useStartImage && !refImageDataUrl && (
                   <div className="pl-12">
@@ -367,45 +368,45 @@ export default function VideoPage() {
                 <ToggleRow
                   checked={generateAudio}
                   onChange={setGenerateAudio}
-                  title="Ses üret"
-                  hint="Kapatırsan video sessiz çıkar, süre neredeyse aynı kalır"
+                  title={t("Ses üret")}
+                  hint={t("Kapatırsan video sessiz çıkar, süre neredeyse aynı kalır")}
                 />
               </Group>
 
-              <Group label="Başlangıç görseli">
+              <Group label={t("Başlangıç görseli")}>
                 <ImagePick
                   value={refImageDataUrl}
                   onPick={handleFileChange}
                   onClear={() => setRefImageDataUrl(null)}
-                  hint="Kendi görselini yüklersen otomatik görsel üretimi atlanır"
+                  hint={t("Kendi görselini yüklersen otomatik görsel üretimi atlanır")}
                 />
               </Group>
             </>
           ) : (
             <>
               <p className="text-muted-foreground text-xs leading-relaxed">
-                Her sahne ayrı üretilir, hepsi bitince tek video halinde art arda birleştirilir.
+                {t("Her sahne ayrı üretilir, hepsi bitince tek video halinde art arda birleştirilir.")}
               </p>
 
-              <Group label="Görüntü (tüm sahneler)">
-                <RatioPicker compact label="Çözünürlük" options={VIDEO_RESOLUTION_OPTIONS} value={resolution} onChange={setResolution} />
+              <Group label={t("Görüntü (tüm sahneler)")}>
+                <RatioPicker compact label={t("Çözünürlük")} options={VIDEO_RESOLUTION_OPTIONS} value={resolution} onChange={setResolution} />
                 <Select value={motionLevel} onValueChange={(v) => v && setMotionLevel(v as "normal" | "dusuk")}>
-                  <SelectTrigger className="w-full" aria-label="Hareket yoğunluğu">
-                    <SelectValue>{(v: string) => (v === "dusuk" ? "Hareket: düşük (masal kitabı)" : "Hareket: normal")}</SelectValue>
+                  <SelectTrigger className="w-full" aria-label={t("Hareket yoğunluğu")}>
+                    <SelectValue>{(v: string) => (v === "dusuk" ? t("Hareket: düşük (masal kitabı)") : t("Hareket: normal"))}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="dusuk">Düşük (Masal Kitabı)</SelectItem>
+                    <SelectItem value="normal">{t("Normal")}</SelectItem>
+                    <SelectItem value="dusuk">{t("Düşük (Masal Kitabı)")}</SelectItem>
                   </SelectContent>
                 </Select>
               </Group>
 
-              <Group label="Karakter tutarlılığı" badge="Opsiyonel">
+              <Group label={t("Karakter tutarlılığı")} badge={t("Opsiyonel")}>
                 <p className="text-muted-foreground -mt-1 text-xs leading-relaxed">
-                  Bir referans görsel üret, bütün sahneler aynı karaktere ve aynı seed&apos;e bağlı kalsın.
+                  {t("Bir referans görsel üret, bütün sahneler aynı karaktere ve aynı seed'e bağlı kalsın.")}
                 </p>
                 <textarea
-                  placeholder="Örn: küçük yuvarlak kulaklı kızıl bir tilki yavrusu, mavi tulum, iri gözler"
+                  placeholder={t("Örn: küçük yuvarlak kulaklı kızıl bir tilki yavrusu, mavi tulum, iri gözler")}
                   value={characterDescription}
                   onChange={(e) => setCharacterDescription(e.target.value)}
                   rows={2}
@@ -416,12 +417,12 @@ export default function VideoPage() {
                     value={referenceProvider}
                     onValueChange={(v) => v && setReferenceProvider(v as "gemini" | "comfy-flux-schnell")}
                   >
-                    <SelectTrigger className="min-w-0 flex-1" aria-label="Görsel sağlayıcı">
+                    <SelectTrigger className="min-w-0 flex-1" aria-label={t("Görsel sağlayıcı")}>
                       <SelectValue>{(v: string) => (v === "gemini" ? "Gemini, Nano Banana" : "ComfyUI, FLUX schnell")}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="gemini">Gemini, Nano Banana</SelectItem>
-                      <SelectItem value="comfy-flux-schnell">ComfyUI (Yerel), FLUX schnell</SelectItem>
+                      <SelectItem value="gemini">{t("Gemini, Nano Banana")}</SelectItem>
+                      <SelectItem value="comfy-flux-schnell">{t("ComfyUI (Yerel), FLUX schnell")}</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button
@@ -431,13 +432,13 @@ export default function VideoPage() {
                     disabled={!characterDescription.trim() || referenceGenerating}
                   >
                     {referenceGenerating && <Loader2 className="animate-spin" data-icon="inline-start" />}
-                    {referenceImageUrl ? "Yenile" : "Oluştur"}
+                    {referenceImageUrl ? t("Yenile") : t("Oluştur")}
                   </Button>
                 </div>
                 {referenceImageUrl && (
                   <div className="flex items-center gap-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={referenceImageUrl} alt="karakter referansı" className="igor-reveal size-16 rounded-md object-cover" />
+                    <img src={referenceImageUrl} alt={t("karakter referansı")} className="igor-reveal size-16 rounded-md object-cover" />
                     <button
                       type="button"
                       onClick={() => {
@@ -446,7 +447,7 @@ export default function VideoPage() {
                       }}
                       className="text-muted-foreground hover:text-destructive text-xs"
                     >
-                      Kaldır
+                      {t("Kaldır")}
                     </button>
                   </div>
                 )}
@@ -456,20 +457,20 @@ export default function VideoPage() {
               {scenes.map((scene, i) => (
                 <div key={scene.key} className="border-border/70 flex flex-col gap-3 rounded-md border p-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold">Sahne {i + 1}</span>
+                    <span className="text-xs font-semibold">{t("Sahne")} {i + 1}</span>
                     {scenes.length > 2 && (
                       <button
                         type="button"
                         onClick={() => removeScene(scene.key)}
                         className="text-muted-foreground hover:text-destructive"
-                        aria-label="Sahneyi kaldır"
+                        aria-label={t("Sahneyi kaldır")}
                       >
                         <X className="size-4" />
                       </button>
                     )}
                   </div>
                   <textarea
-                    placeholder="Bu sahnede ne olsun? (hareket, anlatım, diyalog)"
+                    placeholder={t("Bu sahnede ne olsun? (hareket, anlatım, diyalog)")}
                     value={scene.prompt}
                     onChange={(e) => updateScene(scene.key, { prompt: e.target.value })}
                     rows={2}
@@ -477,7 +478,7 @@ export default function VideoPage() {
                   />
                   {referenceImageUrl && (
                     <textarea
-                      placeholder="Sahne görseli: sadece ne görünsün (kısa, diyalog yok). Boşsa üstteki metin kullanılır."
+                      placeholder={t("Sahne görseli: sadece ne görünsün (kısa, diyalog yok). Boşsa üstteki metin kullanılır.")}
                       value={scene.imageVisual}
                       onChange={(e) => updateScene(scene.key, { imageVisual: e.target.value })}
                       rows={2}
@@ -491,7 +492,7 @@ export default function VideoPage() {
                   <ToggleRow
                     checked={scene.useStartImage}
                     onChange={(v) => updateScene(scene.key, { useStartImage: v })}
-                    title="Önce görsel üret, sonra canlandır"
+                    title={t("Önce görsel üret, sonra canlandır")}
                   />
                   {scene.useStartImage && !scene.refImageDataUrl && !referenceImageUrl && (
                     <div className="pl-12">
@@ -505,13 +506,13 @@ export default function VideoPage() {
                   )}
                   {scene.useStartImage && !scene.refImageDataUrl && referenceImageUrl && (
                     <p className="text-muted-foreground pl-12 text-xs">
-                      Karakter referansına bağlı, {referenceProvider === "gemini" ? "Gemini" : "yerel FLUX"} ile üretilecek.
+                      {t("Karakter referansına bağlı,")} {referenceProvider === "gemini" ? "Gemini" : t("yerel FLUX")} {t("ile üretilecek.")}
                     </p>
                   )}
                   <ToggleRow
                     checked={scene.generateAudio}
                     onChange={(v) => updateScene(scene.key, { generateAudio: v })}
-                    title="Ses üret"
+                    title={t("Ses üret")}
                   />
                   <ImagePick
                     value={scene.refImageDataUrl}
@@ -523,7 +524,7 @@ export default function VideoPage() {
 
               <Button variant="outline" onClick={addScene} disabled={scenes.length >= MAX_SCENES}>
                 <Plus data-icon="inline-start" />
-                Sahne ekle
+                {t("Sahne ekle")}
               </Button>
             </>
           )}
@@ -533,12 +534,12 @@ export default function VideoPage() {
           {mode === "single" ? (
             <Button onClick={handleGenerate} disabled={!prompt.trim()} size="lg" className="w-full">
               <Film data-icon="inline-start" />
-              Kuyruğa ekle
+              {t("Kuyruğa ekle")}
             </Button>
           ) : (
             <Button onClick={handleGenerateProject} disabled={!scenesReady} size="lg" className="w-full">
               <Film data-icon="inline-start" />
-              Projeyi kuyruğa ekle ({scenes.length} sahne)
+              {t("Projeyi kuyruğa ekle (")}{scenes.length} {t("sahne)")}
             </Button>
           )}
         </div>
@@ -546,29 +547,29 @@ export default function VideoPage() {
 
       <section className="bg-card ring-foreground/10 flex min-h-0 flex-col rounded-lg ring-1">
         <div className="border-border/60 flex flex-wrap items-center gap-3 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Videolar</h2>
+          <h2 className="text-sm font-semibold">{t("Videolar")}</h2>
           <span className="text-muted-foreground text-xs">
-            {jobs.length} video{projects.length > 0 && `, ${projects.length} proje`}
+            {jobs.length} {t("video")}{projects.length > 0 && `, ${projects.length} proje`}
           </span>
           {activeCount > 0 && (
             <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
               <Loader2 className="text-primary size-3.5 animate-spin" />
-              {activeCount} sırada
+              {activeCount} {t("sırada")}
             </span>
           )}
           <span className="text-muted-foreground ml-auto hidden text-xs xl:inline">
-            5 sn 1280×720 video yaklaşık 7 dk sürer. Başarısız denemeler{" "}
+            {t("5 sn 1280×720 video yaklaşık 7 dk sürer. Başarısız denemeler")}{" "}
             <Link href="/debug" className="text-primary hover:underline">
-              Hatalar
+              {t("Hatalar")}
             </Link>
-            &apos;da.
+            {t("'da.")}
           </span>
         </div>
 
         <div className="thin-scrollbar min-h-0 flex-1 overflow-y-auto p-4">
           {jobs.length === 0 && projects.length === 0 ? (
             <div className="text-muted-foreground flex h-full items-center justify-center text-center text-sm">
-              Henüz video yok. Soldan bir prompt yazıp kuyruğa ekle.
+              {t("Henüz video yok. Soldan bir prompt yazıp kuyruğa ekle.")}
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-3">
@@ -589,8 +590,8 @@ export default function VideoPage() {
                     onDelete={() => handleDeleteProject(project.id)}
                     meta={
                       <>
-                        <Badge>Proje</Badge>
-                        <Badge variant="secondary">{project.sceneCount} sahne</Badge>
+                        <Badge>{t("Proje")}</Badge>
+                        <Badge variant="secondary">{project.sceneCount} {t("sahne")}</Badge>
                       </>
                     }
                     createdAt={project.createdAt}
@@ -612,15 +613,15 @@ export default function VideoPage() {
                   createdAt={job.createdAt}
                   meta={
                     <>
-                      {job.projectId && <Badge variant="secondary">Sahne {(job.sceneIndex ?? 0) + 1}</Badge>}
+                      {job.projectId && <Badge variant="secondary">{t("Sahne")} {(job.sceneIndex ?? 0) + 1}</Badge>}
                       <Badge variant="secondary">
                         {job.width}×{job.height}
                       </Badge>
-                      <Badge variant="secondary">{job.durationSeconds} sn</Badge>
+                      <Badge variant="secondary">{job.durationSeconds} {t("sn")}</Badge>
                       {job.status === "done" && job.ms !== undefined && job.ms > 0 && (
-                        <Badge variant="secondary">{(job.ms / 60000).toFixed(1)} dk</Badge>
+                        <Badge variant="secondary">{(job.ms / 60000).toFixed(1)} {t("dk")}</Badge>
                       )}
-                      {job.startImageFallback && <Badge variant="destructive">görsel üretilemedi, metinden</Badge>}
+                      {job.startImageFallback && <Badge variant="destructive">{t("görsel üretilemedi, metinden")}</Badge>}
                     </>
                   }
                 />
@@ -633,7 +634,7 @@ export default function VideoPage() {
       {fullscreenUrl && (
         <FullscreenViewer
           src={fullscreenUrl.url}
-          alt={fullscreenUrl.kind === "image" ? "referans görsel" : "video"}
+          alt={fullscreenUrl.kind === "image" ? t("referans görsel") : "video"}
           kind={fullscreenUrl.kind}
           onClose={() => setFullscreenUrl(null)}
         />
@@ -660,18 +661,18 @@ function Group({ label, badge, children }: { label: string; badge?: string; chil
 function StyleSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <Select value={value} onValueChange={(v) => v && onChange(v)}>
-      <SelectTrigger className="w-full min-w-0" aria-label="Stil">
+      <SelectTrigger className="w-full min-w-0" aria-label={t("Stil")}>
         <SelectValue>
           {(v: string) => {
             const s = VIDEO_STYLES.find((st) => st.id === v);
-            return <span className="truncate">Stil: {s && s.id !== "none" ? s.label : "yok"}</span>;
+            return <span className="truncate">{t("Stil:")} {s && s.id !== "none" ? t(s.label) : t("yok")}</span>;
           }}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {VIDEO_STYLES.map((s) => (
           <SelectItem key={s.id} value={s.id}>
-            {s.label}
+            {t(s.label)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -681,7 +682,7 @@ function StyleSelect({ value, onChange }: { value: string; onChange: (v: string)
 
 function DurationPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
-    <div role="radiogroup" aria-label="Süre" className="bg-muted/60 grid h-9 grid-flow-col gap-0.5 rounded-md p-0.5">
+    <div role="radiogroup" aria-label={t("Süre")} className="bg-muted/60 grid h-9 grid-flow-col gap-0.5 rounded-md p-0.5">
       {VIDEO_DURATIONS.map((d) => (
         <button
           key={d}
@@ -694,7 +695,7 @@ function DurationPicker({ value, onChange }: { value: number; onChange: (v: numb
             value === d ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
           )}
         >
-          {d} sn
+          {d} {t("sn")}
         </button>
       ))}
     </div>
@@ -756,10 +757,10 @@ function ImagePick({
     return (
       <div className="border-border/70 flex items-center gap-3 rounded-md border p-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={value} alt="başlangıç görseli" className="size-12 rounded-sm object-cover" />
-        <span className="text-muted-foreground min-w-0 flex-1 text-xs">Bu görsel canlandırılacak</span>
+        <img src={value} alt={t("başlangıç görseli")} className="size-12 rounded-sm object-cover" />
+        <span className="text-muted-foreground min-w-0 flex-1 text-xs">{t("Bu görsel canlandırılacak")}</span>
         <button type="button" onClick={onClear} className="text-muted-foreground hover:text-destructive px-2 text-xs">
-          Kaldır
+          {t("Kaldır")}
         </button>
       </div>
     );
@@ -768,7 +769,7 @@ function ImagePick({
     <label className="border-input hover:border-ring hover:bg-muted/30 flex cursor-pointer items-center gap-3 rounded-md border border-dashed px-3 py-2.5 transition-colors">
       <ImagePlus className="text-muted-foreground size-4 shrink-0" />
       <span className="min-w-0">
-        <span className="block text-sm">Görsel yükle</span>
+        <span className="block text-sm">{t("Görsel yükle")}</span>
         {hint && <span className="text-muted-foreground block text-xs">{hint}</span>}
       </span>
       <input type="file" accept="image/*" onChange={onPick} className="sr-only" />
@@ -808,7 +809,7 @@ function MediaCard({
     <article className="border-border/60 group animate-in fade-in flex flex-col overflow-hidden rounded-md border">
       <div className="relative aspect-video overflow-hidden bg-black">
         {status === "done" && url && (
-          <button type="button" onClick={onOpen} className="absolute inset-0" aria-label="Videoyu aç">
+          <button type="button" onClick={onOpen} className="absolute inset-0" aria-label={t("Videoyu aç")}>
             <video
               src={`${url}#t=0.1`}
               muted
@@ -836,7 +837,7 @@ function MediaCard({
               </>
             )}
             <div className="relative flex h-full flex-col items-center justify-center gap-1">
-              <span className="text-sm font-medium">{status === "running" ? "Üretiliyor" : "Kuyrukta"}</span>
+              <span className="text-sm font-medium">{status === "running" ? t("Üretiliyor") : t("Kuyrukta")}</span>
               {progressLabel && <span className="text-muted-foreground text-xs">{progressLabel}</span>}
               <ElapsedTimer since={since} />
             </div>
@@ -858,22 +859,22 @@ function MediaCard({
         {prompt && <p className="text-muted-foreground line-clamp-2 text-xs leading-relaxed">{prompt}</p>}
         <div className="mt-auto flex items-center gap-3 pt-0.5">
           {startImageUrl && (
-            <button type="button" onClick={onOpenStartImage} title="Başlangıç görseli">
+            <button type="button" onClick={onOpenStartImage} title={t("Başlangıç görseli")}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={startImageUrl} alt="başlangıç görseli" className="size-7 rounded-sm object-cover" />
+              <img src={startImageUrl} alt={t("başlangıç görseli")} className="size-7 rounded-sm object-cover" />
             </button>
           )}
           <span className="text-muted-foreground text-[11px]">
-            {new Date(createdAt).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" })}
+            {new Date(createdAt).toLocaleString(locale(), { dateStyle: "short", timeStyle: "short" })}
           </span>
           <div className="ml-auto flex items-center gap-3">
             {status === "done" && url && (
               <a href={url} download className="text-primary text-xs font-medium hover:underline">
-                İndir
+                {t("İndir")}
               </a>
             )}
             <button type="button" onClick={onDelete} className="text-muted-foreground hover:text-destructive text-xs font-medium">
-              Sil
+              {t("Sil")}
             </button>
           </div>
         </div>

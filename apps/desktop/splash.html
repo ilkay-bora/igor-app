@@ -17,6 +17,11 @@
   <body>
     <h1>IGOR</h1>
     <div class="bar"></div>
-    <p>Stüdyo başlatılıyor...</p>
+    <p id="status">Stüdyo başlatılıyor...</p>
+    <script>
+      if (new URLSearchParams(location.search).get("lang") === "en") {
+        document.getElementById("status").textContent = "Starting the studio...";
+      }
+    </script>
   </body>
 </html>

@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { tServer } from "@/lib/i18n-server";
 
 const VIDEOS_DIR = path.join(process.cwd(), "public", "videos");
 const VIDEO_EXTENSIONS = new Set([".mp4", ".mov", ".webm", ".mkv", ".m4v"]);
@@ -10,7 +11,7 @@ export async function POST(request: Request) {
   const name = new URL(request.url).searchParams.get("name") ?? "";
   const ext = path.extname(name).toLowerCase();
   if (!VIDEO_EXTENSIONS.has(ext)) {
-    return Response.json({ error: "Desteklenmeyen video türü" }, { status: 400 });
+    return Response.json({ error: tServer("Desteklenmeyen video türü") }, { status: 400 });
   }
 
   const filename = `upload-${crypto.randomUUID()}${ext}`;

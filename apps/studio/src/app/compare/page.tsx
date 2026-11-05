@@ -21,6 +21,7 @@ import {
   persistImage,
   toErrorMessage,
 } from "@/lib/providers";
+import { t } from "@/lib/i18n";
 
 type Status = "idle" | "loading" | "done" | "error";
 type ProviderState = {
@@ -44,10 +45,10 @@ export default function ComparePage() {
 
   function handleDelete(state: ProviderState, setState: (s: ProviderState) => void) {
     if (!state.savedId) return;
-    if (!window.confirm("Bu görseli silmek istediğine emin misin?")) return;
+    if (!window.confirm(t("Bu görseli silmek istediğine emin misin?"))) return;
     deleteGeneration(state.savedId)
       .then(() => setState({ status: "idle" }))
-      .catch((err) => console.error("Görsel silinemedi:", err));
+      .catch((err) => console.error(t("Görsel silinemedi:"), err));
   }
 
   function runGemini(currentPrompt: string, currentRatio: Ratio) {
@@ -63,7 +64,7 @@ export default function ComparePage() {
           dataUrl: url,
         })
           .then((saved) => setGemini((s) => ({ ...s, savedUrl: saved.url, savedId: saved.id })))
-          .catch((err) => console.error("Görsel kaydedilemedi:", err));
+          .catch((err) => console.error(t("Görsel kaydedilemedi:"), err));
       })
       .catch((err) => {
         const message = toErrorMessage(err);
@@ -91,7 +92,7 @@ export default function ComparePage() {
           dataUrl: url,
         })
           .then((saved) => setPollinations((s) => ({ ...s, savedUrl: saved.url, savedId: saved.id })))
-          .catch((err) => console.error("Görsel kaydedilemedi:", err));
+          .catch((err) => console.error(t("Görsel kaydedilemedi:"), err));
       })
       .catch((err) => {
         const message = toErrorMessage(err);
@@ -124,7 +125,7 @@ export default function ComparePage() {
           dataUrl: url,
         })
           .then((saved) => setLocal((s) => ({ ...s, savedUrl: saved.url, savedId: saved.id })))
-          .catch((err) => console.error("Görsel kaydedilemedi:", err));
+          .catch((err) => console.error(t("Görsel kaydedilemedi:"), err));
       })
       .catch((err) => {
         const message = toErrorMessage(err);
@@ -153,9 +154,9 @@ export default function ComparePage() {
     <main className="mx-auto flex h-[calc(100dvh-3.5rem)] w-full max-w-[1800px] flex-col gap-4 overflow-hidden px-6 py-5">
       <div className="flex items-end justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight">Karşılaştır</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{t("Karşılaştır")}</h1>
           <p className="text-muted-foreground mt-0.5 truncate text-sm">
-            Aynı prompt üç modelde aynı anda denenir, sonuçlar yan yana çıkar ve otomatik kaydedilir.
+            {t("Aynı prompt üç modelde aynı anda denenir, sonuçlar yan yana çıkar ve otomatik kaydedilir.")}
           </p>
         </div>
       </div>
@@ -168,7 +169,7 @@ export default function ComparePage() {
         className="bg-card ring-foreground/10 focus-within:ring-primary/40 shrink-0 rounded-lg ring-1 transition-shadow"
       >
         <textarea
-          placeholder="Ne oluşturmak istersin? Enter ile üç modelde birden üret."
+          placeholder={t("Ne oluşturmak istersin? Enter ile üç modelde birden üret.")}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={(e) => {
@@ -181,44 +182,44 @@ export default function ComparePage() {
           className="placeholder:text-muted-foreground thin-scrollbar block max-h-32 min-h-16 w-full resize-none bg-transparent px-4 pt-3.5 pb-1 text-base outline-none [field-sizing:content]"
         />
         <div className="flex flex-wrap items-center gap-2 p-2.5">
-          <RatioPicker compact label="Oran" options={RATIO_OPTIONS} value={ratio} onChange={(v) => setRatio(v as Ratio)} />
+          <RatioPicker compact label={t("Oran")} options={RATIO_OPTIONS} value={ratio} onChange={(v) => setRatio(v as Ratio)} />
           <Button type="submit" disabled={!prompt.trim()} className="ml-auto">
             <Sparkles data-icon="inline-start" />
-            Hepsini Üret
+            {t("Hepsini Üret")}
           </Button>
         </div>
       </form>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-3">
         <ProviderCard
-          title="Gemini (Nano Banana)"
-          description="En yüksek kalite, ama Ayarlar'da Gemini API anahtarı ister."
-          badge="API key gerekli"
+          title={t("Gemini (Nano Banana)")}
+          description={t("En yüksek kalite, ama Ayarlar'da Gemini API anahtarı ister.")}
+          badge={t("API key gerekli")}
           badgeVariant="secondary"
           state={gemini}
-          onOpen={() => gemini.url && setZoomed({ title: "Gemini (Nano Banana)", url: gemini.url })}
+          onOpen={() => gemini.url && setZoomed({ title: t("Gemini (Nano Banana)"), url: gemini.url })}
           onRetry={() => runGemini(prompt, ratio)}
           onDelete={() => handleDelete(gemini, setGemini)}
         />
         <ProviderCard
-          title="Pollinations.ai"
-          description="Sunucu tarafında kendi Pollinations API key'inle çalışır."
-          badge="API key gerekli"
+          title={t("Pollinations.ai")}
+          description={t("Sunucu tarafında kendi Pollinations API key'inle çalışır.")}
+          badge={t("API key gerekli")}
           badgeVariant="default"
           state={pollinations}
           onOpen={() =>
-            pollinations.url && setZoomed({ title: "Pollinations.ai", url: pollinations.url })
+            pollinations.url && setZoomed({ title: t("Pollinations.ai"), url: pollinations.url })
           }
           onRetry={() => runPollinations(prompt, ratio)}
           onDelete={() => handleDelete(pollinations, setPollinations)}
         />
         <ProviderCard
-          title="ComfyUI (Yerel) FLUX schnell"
-          description="Kendi GPU'nda çalışır, key gerekmez, limitsiz."
-          badge="Yerel"
+          title={t("ComfyUI (Yerel) FLUX schnell")}
+          description={t("Kendi GPU'nda çalışır, key gerekmez, limitsiz.")}
+          badge={t("Yerel")}
           badgeVariant="default"
           state={local}
-          onOpen={() => local.url && setZoomed({ title: "ComfyUI (Yerel) FLUX schnell", url: local.url })}
+          onOpen={() => local.url && setZoomed({ title: t("ComfyUI (Yerel) FLUX schnell"), url: local.url })}
           onRetry={() => runLocal(prompt, ratio)}
           onDelete={() => handleDelete(local, setLocal)}
         />
@@ -226,15 +227,15 @@ export default function ComparePage() {
 
       <Dialog open={!!zoomed} onOpenChange={(open) => !open && setZoomed(null)}>
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-x-hidden overflow-y-auto">
-          <DialogTitle>{zoomed?.title}</DialogTitle>
-          {zoomed && <FitImage src={zoomed.url} alt={zoomed.title} />}
+          <DialogTitle>{t(zoomed?.title)}</DialogTitle>
+          {zoomed && <FitImage src={zoomed.url} alt={t(zoomed.title)} />}
           {zoomed && (
             <button
               type="button"
               onClick={() => setFullscreenUrl(zoomed.url)}
               className="text-primary text-sm font-medium underline-offset-4 hover:underline"
             >
-              Tam ekran
+              {t("Tam ekran")}
             </button>
           )}
         </DialogContent>
@@ -243,7 +244,7 @@ export default function ComparePage() {
       {fullscreenUrl && (
         <FullscreenViewer
           src={fullscreenUrl}
-          alt={zoomed?.title ?? ""}
+          alt={t(zoomed?.title ?? "")}
           onClose={() => setFullscreenUrl(null)}
         />
       )}
@@ -289,14 +290,14 @@ function ProviderCard({
           >
             {state.status === "idle" && (
               <span className="text-muted-foreground px-4 text-center text-sm">
-                Prompt gir ve &quot;Hepsini Üret&quot;e bas
+                {t("Prompt gir ve \"Hepsini Üret\"e bas")}
               </span>
             )}
             {state.status === "loading" && !state.url && (
               <span className="absolute inset-0 overflow-hidden">
                 <span className="bg-primary/30 igor-glow absolute top-1/2 left-1/2 size-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl" />
                 <span className="igor-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.07] to-transparent" />
-                <span className="relative flex h-full items-center justify-center text-sm font-medium">Üretiliyor</span>
+                <span className="relative flex h-full items-center justify-center text-sm font-medium">{t("Üretiliyor")}</span>
                 <span className="bg-foreground/10 absolute inset-x-0 bottom-0 h-0.5 overflow-hidden">
                   <span className="bg-primary igor-indeterminate absolute inset-y-0 w-[35%]" />
                 </span>
@@ -308,12 +309,12 @@ function ProviderCard({
             )}
             {state.status === "loading" && state.url && (
               <div className="bg-background/60 absolute inset-0 flex items-center justify-center">
-                <span className="text-sm animate-pulse">Yükleniyor...</span>
+                <span className="text-sm animate-pulse">{t("Yükleniyor...")}</span>
               </div>
             )}
             {state.status === "done" && (
               <span className="bg-background/80 absolute bottom-2 left-2 rounded-sm px-2 py-0.5 text-[11px]">
-                Yakınlaştır
+                {t("Yakınlaştır")}
               </span>
             )}
           </button>
@@ -326,14 +327,14 @@ function ProviderCard({
               <div className="flex items-center gap-3">
                 {onRetry && (
                   <Button type="button" size="sm" variant="secondary" onClick={onRetry}>
-                    Tekrar dene
+                    {t("Tekrar dene")}
                   </Button>
                 )}
                 <Link
                   href="/debug"
                   className="text-primary text-xs underline-offset-4 hover:underline"
                 >
-                  Hatalar sayfasında gör
+                  {t("Hatalar sayfasında gör")}
                 </Link>
               </div>
             </div>
@@ -347,10 +348,10 @@ function ProviderCard({
                 download
                 className="text-primary text-sm font-medium underline-offset-4 hover:underline"
               >
-                İndir
+                {t("İndir")}
               </a>
             ) : (
-              <span className="text-muted-foreground text-xs">Kaydediliyor...</span>
+              <span className="text-muted-foreground text-xs">{t("Kaydediliyor...")}</span>
             )}
             {state.savedId && (
               <button
@@ -358,7 +359,7 @@ function ProviderCard({
                 onClick={onDelete}
                 className="text-destructive text-sm font-medium underline-offset-4 hover:underline"
               >
-                Sil
+                {t("Sil")}
               </button>
             )}
           </div>

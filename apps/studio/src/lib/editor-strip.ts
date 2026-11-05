@@ -41,7 +41,10 @@ function bestTwoLines(text: string): string[] {
 }
 
 export function layoutStrip(rawText: string, canvasW: number, canvasH: number, yPct: number): StripLayout {
-  const text = rawText.trim().toLocaleUpperCase("tr-TR");
+  // Turkish casing (i to İ) only for Turkish text, judged by its letters, so
+  // preview and render agree regardless of UI language.
+  const trimmed = rawText.trim();
+  const text = /[ğĞşŞıİ]/.test(trimmed) ? trimmed.toLocaleUpperCase("tr-TR") : trimmed.toUpperCase();
   const width = Math.round(canvasW * (canvasH > canvasW ? 0.96 : 0.56));
   const scale = width / IMG_W;
   const room = (TEXT_RIGHT - TEXT_LEFT) * scale;

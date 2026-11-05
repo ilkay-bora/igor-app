@@ -13,9 +13,10 @@ export type Settings = {
   comfyuiDir?: string;
   comfyuiUrl?: string;
   setupDone?: boolean;
+  language?: "tr" | "en";
 };
 
-export type SettingKey = Exclude<keyof Settings, "setupDone">;
+export type SettingKey = Exclude<keyof Settings, "setupDone" | "language">;
 
 const FILE = path.join(process.cwd(), "data", "settings.json");
 

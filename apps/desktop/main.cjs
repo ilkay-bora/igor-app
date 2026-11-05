@@ -11,6 +11,43 @@ const path = require("node:path");
 const STUDIO_DIR = path.resolve(__dirname, "..", "studio");
 const ICON = path.join(__dirname, "assets", "icon.ico");
 const TRAY_ICON = path.join(__dirname, "assets", "tray.png");
+
+// Shell strings follow the studio's language setting (data/settings.json),
+// else the system locale, like the studio itself.
+const STRINGS = {
+  serverExited: ["Studio sunucusu başlarken kapandı.", "The studio server exited while starting."],
+  serverTimeout: ["Studio sunucusu zamanında açılmadı.", "The studio server did not start in time."],
+  serverCrashed: [
+    "Studio sunucusu beklenmedik şekilde kapandı (kod {code}). Uygulama kapanacak.",
+    "The studio server stopped unexpectedly (code {code}). IGOR will close.",
+  ],
+  trayTitle: ["IGOR arka planda çalışıyor", "IGOR is running in the background"],
+  trayContent: [
+    "Kuyruktaki işler devam ediyor. Kapatmak için tepsi simgesinden Çıkış'ı seç.",
+    "Queued jobs keep running. To quit, choose Quit from the tray icon.",
+  ],
+  open: ["IGOR'u aç", "Open IGOR"],
+  editor: ["Editör", "Editor"],
+  log: ["Günlük dosyasını aç", "Open log file"],
+  quit: ["Çıkış", "Quit"],
+  failed: ["IGOR açılamadı", "IGOR could not start"],
+};
+
+function lang() {
+  try {
+    const saved = JSON.parse(fs.readFileSync(path.join(STUDIO_DIR, "data", "settings.json"), "utf8")).language;
+    if (saved === "tr" || saved === "en") return saved;
+  } catch {
+    // no settings yet
+  }
+  return app.getLocale().toLowerCase().startsWith("tr") ? "tr" : "en";
+}
+
+function tr(key, vars = {}) {
+  let text = STRINGS[key][lang() === "en" ? 1 : 0];
+  for (const [k, v] of Object.entries(vars)) text = text.split(`{${k}}`).join(String(v));
+  return text;
+}
 const DEV = process.env.IGOR_DEV === "1" || !fs.existsSync(path.join(STUDIO_DIR, ".next", "BUILD_ID"));
 
 let server = null;
@@ -60,7 +97,7 @@ function freePort(preferred) {
 async function waitForServer(url, timeoutMs) {
   const until = Date.now() + timeoutMs;
   while (Date.now() < until) {
-    if (server && server.exitCode !== null) throw new Error("Studio sunucusu başlarken kapandı.");
+    if (server && server.exitCode !== null) throw new Error(tr("serverExited"));
     try {
       const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
       if (res.status < 500) return;
@@ -69,7 +106,7 @@ async function waitForServer(url, timeoutMs) {
     }
     await new Promise((r) => setTimeout(r, 400));
   }
-  throw new Error("Studio sunucusu zamanında açılmadı.");
+  throw new Error(tr("serverTimeout"));
 }
 
 function startServer(token) {
@@ -87,7 +124,7 @@ function startServer(token) {
   server.stderr.pipe(logFile);
   server.on("exit", (code) => {
     if (!quitting) {
-      dialog.showErrorBox("IGOR", `Studio sunucusu beklenmedik şekilde kapandı (kod ${code}). Uygulama kapanacak.`);
+      dialog.showErrorBox("IGOR", tr("serverCrashed", { code }));
       quitApp();
     }
   });
@@ -111,7 +148,7 @@ function createSplash() {
     icon: ICON,
     show: true,
   });
-  splash.loadFile(path.join(__dirname, "splash.html"));
+  splash.loadFile(path.join(__dirname, "splash.html"), { query: { lang: lang() } });
 }
 
 function createMainWindow(url) {
@@ -144,8 +181,8 @@ function createMainWindow(url) {
     e.preventDefault();
     mainWindow.hide();
     tray?.displayBalloon?.({
-      title: "IGOR arka planda çalışıyor",
-      content: "Kuyruktaki işler devam ediyor. Kapatmak için tepsi simgesinden Çıkış'ı seç.",
+      title: tr("trayTitle"),
+      content: tr("trayContent"),
       iconType: "info",
     });
   });
@@ -157,12 +194,12 @@ function createTray() {
   tray.setToolTip("IGOR");
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      { label: "IGOR'u aç", click: showMain },
-      { label: "Editör", click: () => openPath("/video/editor") },
+      { label: tr("open"), click: showMain },
+      { label: tr("editor"), click: () => openPath("/video/editor") },
       { type: "separator" },
-      { label: "Günlük dosyasını aç", click: () => shell.openPath(path.join(app.getPath("userData"), "studio.log")) },
+      { label: tr("log"), click: () => shell.openPath(path.join(app.getPath("userData"), "studio.log")) },
       { type: "separator" },
-      { label: "Çıkış", click: quitApp },
+      { label: tr("quit"), click: quitApp },
     ])
   );
   tray.on("double-click", showMain);
@@ -228,7 +265,7 @@ function removeServerInfo() {
 }
 
 function fail(err) {
-  dialog.showErrorBox("IGOR açılamadı", String(err?.message ?? err));
+  dialog.showErrorBox(tr("failed"), String(err?.message ?? err));
   quitApp();
 }
 

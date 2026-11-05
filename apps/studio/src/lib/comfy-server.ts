@@ -1,6 +1,7 @@
 import { comfyUrl } from "./settings";
 import { ensureComfyRunning } from "./comfy-launcher";
 import { uploadImageToComfy } from "./comfy-upload";
+import { tServer } from "@/lib/i18n-server";
 
 
 type Workflow = Record<string, { class_type: string; inputs: Record<string, unknown> }>;
@@ -159,7 +160,7 @@ export async function runComfyGeneration(params: {
       body: JSON.stringify({ prompt: workflow, client_id: clientId }),
     });
   } catch {
-    throw new Error(`ComfyUI'a bağlanılamadı. Yerel sunucu çalışıyor mu? (${comfyUrl()})`);
+    throw new Error(tServer("ComfyUI'a bağlanılamadı. Yerel sunucu çalışıyor mu? ({v1})", { v1: comfyUrl() }));
   }
 
   const queueData = await queueRes.json();
@@ -181,12 +182,12 @@ export async function runComfyGeneration(params: {
     const entry = hist[promptId];
 
     if (entry?.status?.status_str === "error") {
-      throw new Error(`ComfyUI hatası: ${JSON.stringify(entry.status.messages ?? entry.status)}`);
+      throw new Error(tServer("ComfyUI hatası: {v1}", { v1: JSON.stringify(entry.status.messages ?? entry.status) }));
     }
 
     if (entry?.status?.completed) {
       const image = entry.outputs?.save?.images?.[0];
-      if (!image) throw new Error("Görsel üretilemedi (çıktı boş)");
+      if (!image) throw new Error(tServer("Görsel üretilemedi (çıktı boş)"));
 
       const viewParams = new URLSearchParams({
         filename: image.filename,
@@ -203,5 +204,5 @@ export async function runComfyGeneration(params: {
     }
   }
 
-  throw new Error(`ComfyUI zaman aşımı (${timeoutMs / 1000}s)`);
+  throw new Error(tServer("ComfyUI zaman aşımı ({v1}s)", { v1: timeoutMs / 1000 }));
 }

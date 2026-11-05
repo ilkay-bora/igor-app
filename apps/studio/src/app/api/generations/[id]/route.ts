@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
+import { tServer } from "@/lib/i18n-server";
 
 const MANIFEST_PATH = path.join(process.cwd(), "data", "generations.json");
 
@@ -24,12 +25,12 @@ export async function DELETE(
   try {
     manifest = JSON.parse(await fs.readFile(MANIFEST_PATH, "utf8"));
   } catch {
-    return NextResponse.json({ error: "Kayıt bulunamadı" }, { status: 404 });
+    return NextResponse.json({ error: tServer("Kayıt bulunamadı") }, { status: 404 });
   }
 
   const record = manifest.find((g) => g.id === id);
   if (!record) {
-    return NextResponse.json({ error: "Kayıt bulunamadı" }, { status: 404 });
+    return NextResponse.json({ error: tServer("Kayıt bulunamadı") }, { status: 404 });
   }
 
   const filePath = path.join(process.cwd(), "public", record.url.replace(/^\//, ""));

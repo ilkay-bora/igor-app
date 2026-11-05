@@ -25,6 +25,7 @@ import {
   collectTags,
   normalizeTag,
 } from "@/lib/providers";
+import { locale, t } from "@/lib/i18n";
 
 function byteLength(s: string): number {
   return new Blob([s]).size;
@@ -82,7 +83,7 @@ export default function VoicePage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm("Bu ses kaydını silmek istediğine emin misin?")) return;
+    if (!window.confirm(t("Bu ses kaydını silmek istediğine emin misin?"))) return;
     await deleteVoiceClip(id);
     setClips((prev) => prev.filter((c) => c.id !== id));
   }
@@ -94,13 +95,13 @@ export default function VoicePage() {
     <main className="mx-auto grid h-[calc(100dvh-3.5rem)] w-full max-w-[1800px] grid-cols-1 gap-4 overflow-hidden px-6 py-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
       <section className="flex min-h-0 flex-col gap-4">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Seslendirme</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{t("Seslendirme")}</h1>
           <p className="text-muted-foreground mt-0.5 text-sm">
-            Gemini TTS ile metinden ses üret. Klipler{" "}
+            {t("Gemini TTS ile metinden ses üret. Klipler")}{" "}
             <a href="/video/editor" className="text-primary hover:underline">
-              Editör
+              {t("Editör")}
             </a>
-            &apos;deki Seslendirme katmanından eklenebilir.
+            {t("'deki Seslendirme katmanından eklenebilir.")}
           </p>
         </div>
 
@@ -112,7 +113,7 @@ export default function VoicePage() {
           className="bg-card ring-foreground/10 focus-within:ring-primary/40 flex min-h-0 flex-1 flex-col rounded-lg ring-1 transition-shadow"
         >
           <textarea
-            placeholder="Seslendirilecek metni yaz..."
+            placeholder={t("Seslendirilecek metni yaz...")}
             value={text}
             onChange={(e) => setText(e.target.value)}
             className="placeholder:text-muted-foreground thin-scrollbar block min-h-32 w-full flex-1 resize-none bg-transparent px-4 pt-4 pb-2 text-base leading-relaxed outline-none"
@@ -120,19 +121,19 @@ export default function VoicePage() {
 
           <div className="border-border/60 flex flex-col gap-2.5 border-t px-3 py-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-medium">Ton</span>
+              <span className="text-xs font-medium">{t("Ton")}</span>
               <span className={cn("text-xs tabular-nums", overLimit ? "text-destructive" : "text-muted-foreground")}>
-                {finalBytes} / {TTS_MAX_BYTES} bayt{overLimit && ", metni kısalt"}
+                {finalBytes} / {TTS_MAX_BYTES} {t("bayt")}{overLimit && t(", metni kısalt")}
               </span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {VOICE_STYLE_PRESETS.map((p) => {
-                const active = styleInstruction === p.instruction;
+                const active = styleInstruction === t(p.instruction);
                 return (
                   <button
                     key={p.id}
                     type="button"
-                    onClick={() => setStyleInstruction(active ? "" : p.instruction)}
+                    onClick={() => setStyleInstruction(active ? "" : t(p.instruction))}
                     className={cn(
                       "rounded-md border px-2.5 py-1 text-xs transition-colors",
                       active
@@ -140,14 +141,14 @@ export default function VoicePage() {
                         : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
-                    {p.label}
+                    {t(p.label)}
                   </button>
                 );
               })}
             </div>
             <input
               type="text"
-              placeholder="Ya da kendi talimatını yaz: neşeli bir tonda, yavaş ve sakin, fısıldayarak..."
+              placeholder={t("Ya da kendi talimatını yaz: neşeli bir tonda, yavaş ve sakin, fısıldayarak...")}
               value={styleInstruction}
               onChange={(e) => setStyleInstruction(e.target.value)}
               className="border-input placeholder:text-muted-foreground focus-visible:border-ring dark:bg-input/20 h-9 w-full rounded-md border bg-transparent px-3 text-sm outline-none"
@@ -156,13 +157,13 @@ export default function VoicePage() {
 
           <div className="border-border/60 flex flex-wrap items-center gap-2 border-t p-2.5">
             <Select value={voice} onValueChange={(v) => v && setVoice(v)}>
-              <SelectTrigger className="w-60" aria-label="Ses">
+              <SelectTrigger className="w-60" aria-label={t("Ses")}>
                 <SelectValue>
                   {(v: string) => {
                     const info = voiceInfo(v);
                     return (
                       <span className="truncate">
-                        {v} {info && <span className="text-muted-foreground">{info.gender}, {info.tone}</span>}
+                        {v} {info && <span className="text-muted-foreground">{t(info.gender)}, {t(info.tone)}</span>}
                       </span>
                     );
                   }}
@@ -170,10 +171,10 @@ export default function VoicePage() {
               </SelectTrigger>
               <SelectContent className="max-h-72 w-80">
                 {TTS_VOICE_INFO.map((v) => (
-                  <SelectItem key={v.name} value={v.name}>
-                    {v.name}{" "}
+                  <SelectItem key={t(v.name)} value={t(v.name)}>
+                    {t(v.name)}{" "}
                     <span className="text-muted-foreground">
-                      {v.gender}, {v.tone}
+                      {t(v.gender)}, {t(v.tone)}
                     </span>
                   </SelectItem>
                 ))}
@@ -185,15 +186,15 @@ export default function VoicePage() {
               size="icon"
               onClick={() => handlePreviewVoice(voice)}
               disabled={previewLoadingVoice === voice}
-              title="Sesi dinle"
-              aria-label="Sesi dinle"
+              title={t("Sesi dinle")}
+              aria-label={t("Sesi dinle")}
             >
               {previewLoadingVoice === voice ? <Loader2 className="animate-spin" /> : <Volume2 />}
             </Button>
             <TagInput compact value={tag} onChange={setTag} suggestions={allTags} />
             <Button type="submit" disabled={!text.trim() || generating || overLimit} className="ml-auto">
               {generating ? <Loader2 className="animate-spin" data-icon="inline-start" /> : <AudioLines data-icon="inline-start" />}
-              {generating ? "Üretiliyor" : "Üret"}
+              {generating ? t("Üretiliyor") : t("Üret")}
             </Button>
           </div>
           {error && <p className="text-destructive px-3 pb-3 text-sm">{error}</p>}
@@ -202,8 +203,8 @@ export default function VoicePage() {
 
       <section className="bg-card ring-foreground/10 flex min-h-0 flex-col rounded-lg ring-1">
         <div className="border-border/60 flex flex-wrap items-center gap-3 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Kütüphane</h2>
-          <span className="text-muted-foreground text-xs">{clips.length} klip</span>
+          <h2 className="text-sm font-semibold">{t("Kütüphane")}</h2>
+          <span className="text-muted-foreground text-xs">{clips.length} {t("klip")}</span>
           <div className="ml-auto">
             <TagFilter tags={allTags} active={filterTag} onChange={setFilterTag} />
           </div>
@@ -212,7 +213,7 @@ export default function VoicePage() {
           {generating && (
             <div className="border-border/60 relative mb-2 overflow-hidden rounded-md border p-3">
               <div className="igor-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent" />
-              <p className="relative text-sm font-medium">Üretiliyor</p>
+              <p className="relative text-sm font-medium">{t("Üretiliyor")}</p>
               <p className="text-muted-foreground relative mt-1 line-clamp-1 text-xs">{text}</p>
               <div className="bg-foreground/10 absolute inset-x-0 bottom-0 h-0.5 overflow-hidden">
                 <div className="bg-primary igor-indeterminate absolute inset-y-0 w-[35%]" />
@@ -221,7 +222,7 @@ export default function VoicePage() {
           )}
           {visibleClips.length === 0 && !generating ? (
             <div className="text-muted-foreground flex h-full items-center justify-center text-center text-sm">
-              {clips.length === 0 ? "Henüz seslendirme üretmedin." : "Bu etikette henüz seslendirme yok."}
+              {clips.length === 0 ? t("Henüz seslendirme üretmedin.") : t("Bu etikette henüz seslendirme yok.")}
             </div>
           ) : (
             <ul className="flex flex-col gap-2">
@@ -233,26 +234,26 @@ export default function VoicePage() {
                       <Badge variant="secondary">{clip.voice}</Badge>
                       {info && (
                         <span className="text-muted-foreground text-xs">
-                          {info.gender}, {info.tone}
+                          {t(info.gender)}, {t(info.tone)}
                         </span>
                       )}
                       {clip.tag && <Badge variant="outline">#{clip.tag}</Badge>}
                       <span className="text-muted-foreground ml-auto text-xs">
-                        {new Date(clip.createdAt).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" })}
+                        {new Date(clip.createdAt).toLocaleString(locale(), { dateStyle: "short", timeStyle: "short" })}
                       </span>
                     </div>
                     <p className="text-muted-foreground mt-1.5 line-clamp-2 text-sm">{clip.text}</p>
                     <div className="mt-2 flex items-center gap-3">
                       <audio src={clip.url} controls className="h-8 min-w-0 flex-1" />
                       <a href={clip.url} download className="text-primary text-xs font-medium hover:underline">
-                        İndir
+                        {t("İndir")}
                       </a>
                       <button
                         type="button"
                         onClick={() => handleDelete(clip.id)}
                         className="text-muted-foreground hover:text-destructive text-xs font-medium"
                       >
-                        Sil
+                        {t("Sil")}
                       </button>
                     </div>
                   </li>

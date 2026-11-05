@@ -14,6 +14,7 @@ import {
   type TimelineClip,
 } from "@/lib/editor-schema";
 import type { TransitionType } from "@/lib/providers";
+import { tServer } from "@/lib/i18n-server";
 
 // Saved editor projects, one JSON file each under data/projects/. Agents build
 // these through the local API / MCP server; the editor opens one into its
@@ -73,7 +74,7 @@ export class ProjectError extends Error {
 }
 
 function fileFor(id: string): string {
-  if (!ID.test(id)) throw new ProjectError("Geçersiz proje id", 404);
+  if (!ID.test(id)) throw new ProjectError(tServer("Geçersiz proje id"), 404);
   return path.join(DIR, `${id}.json`);
 }
 
@@ -123,19 +124,19 @@ export async function getProject(id: string): Promise<Project> {
   try {
     return JSON.parse(await fs.readFile(file, "utf8")) as Project;
   } catch {
-    throw new ProjectError("Proje bulunamadı", 404);
+    throw new ProjectError(tServer("Proje bulunamadı"), 404);
   }
 }
 
 export async function createProject(params: { name?: string; resolution?: string }): Promise<Project> {
   const resolution = params.resolution ?? DEFAULT_RESOLUTION;
   if (!(RESOLUTIONS as readonly string[]).includes(resolution)) {
-    throw new ProjectError(`Çözünürlük şunlardan biri olmalı: ${RESOLUTIONS.join(", ")}`);
+    throw new ProjectError(tServer("Çözünürlük şunlardan biri olmalı: {v1}", { v1: RESOLUTIONS.join(", ") }));
   }
   const now = new Date().toISOString();
   return write({
     id: crypto.randomUUID(),
-    name: params.name?.trim().slice(0, 120) || "Adsız proje",
+    name: params.name?.trim().slice(0, 120) || tServer("Adsız proje"),
     version: PROJECT_VERSION,
     createdAt: now,
     updatedAt: now,
@@ -180,7 +181,7 @@ function runFfmpeg(args: string[]): Promise<void> {
     let stderr = "";
     proc.stderr.on("data", (d) => (stderr += d.toString()));
     proc.on("close", (code) =>
-      code === 0 ? resolve() : reject(new Error(`ffmpeg hatası (kod ${code}): ${stderr.slice(-500)}`))
+      code === 0 ? resolve() : reject(new Error(tServer("ffmpeg hatası (kod {code}): {v1}", { code, v1: stderr.slice(-500) })))
     );
     proc.on("error", reject);
   });
@@ -217,13 +218,13 @@ async function stillToClip(imagePath: string, resolution: string, seconds: numbe
 
 async function resolveSource(sourceUrl: string): Promise<{ isImage: boolean; duration: number | null }> {
   if (!SOURCE_URL.test(sourceUrl)) {
-    throw new ProjectError("Kaynak /videos/ ya da /generated/ altında bir dosya olmalı");
+    throw new ProjectError(tServer("Kaynak /videos/ ya da /generated/ altında bir dosya olmalı"));
   }
   const filePath = path.join(PUBLIC_DIR, sourceUrl.slice(1));
   try {
     await fs.access(filePath);
   } catch {
-    throw new ProjectError(`Kaynak dosya yok: ${sourceUrl}`, 404);
+    throw new ProjectError(tServer("Kaynak dosya yok: {sourceUrl}", { sourceUrl }), 404);
   }
   const isImage = IMAGE_EXTENSIONS.has(path.extname(filePath).toLowerCase());
   return { isImage, duration: isImage ? null : await probeDuration(filePath) };
@@ -246,7 +247,7 @@ export async function addClip(
   const { draft } = await getProject(id);
   const { isImage, duration: probed } = await resolveSource(params.sourceUrl);
   if (params.transitionAfter && !TRANSITION_TYPES.includes(params.transitionAfter)) {
-    throw new ProjectError(`Geçiş şunlardan biri olmalı: ${TRANSITION_TYPES.join(", ")}`);
+    throw new ProjectError(tServer("Geçiş şunlardan biri olmalı: {v1}", { v1: TRANSITION_TYPES.join(", ") }));
   }
   let sourceUrl = params.sourceUrl;
   let knownDuration: number;
@@ -285,7 +286,7 @@ export async function removeClip(id: string, clipKey: string): Promise<Project> 
   return update(id, (p) => {
     const before = p.draft.timeline.length;
     p.draft.timeline = p.draft.timeline.filter((c) => c.key !== clipKey);
-    if (p.draft.timeline.length === before) throw new ProjectError("Klip bulunamadı", 404);
+    if (p.draft.timeline.length === before) throw new ProjectError(tServer("Klip bulunamadı"), 404);
   });
 }
 
@@ -303,18 +304,18 @@ export async function addText(
     motion?: MotionType;
   }
 ): Promise<{ project: Project; overlay: OverlayForm }> {
-  if (typeof params.text !== "string" || !params.text.trim()) throw new ProjectError("Metin boş olamaz");
+  if (typeof params.text !== "string" || !params.text.trim()) throw new ProjectError(tServer("Metin boş olamaz"));
   if (!(params.startTime >= 0) || !(params.endTime > params.startTime)) {
-    throw new ProjectError("startTime >= 0 ve endTime > startTime olmalı (saniye)");
+    throw new ProjectError(tServer("startTime >= 0 ve endTime > startTime olmalı (saniye)"));
   }
   if (params.motion && !MOTION_TYPES.includes(params.motion)) {
-    throw new ProjectError(`Hareket şunlardan biri olmalı: ${MOTION_TYPES.join(", ")}`);
+    throw new ProjectError(tServer("Hareket şunlardan biri olmalı: {v1}", { v1: MOTION_TYPES.join(", ") }));
   }
   if (params.color && !/^#[0-9a-fA-F]{6}$/.test(params.color)) {
-    throw new ProjectError("Renk #rrggbb biçiminde olmalı");
+    throw new ProjectError(tServer("Renk #rrggbb biçiminde olmalı"));
   }
   if (params.position && !(params.position in TEXT_POSITION_Y)) {
-    throw new ProjectError("Konum top, center ya da bottom olmalı");
+    throw new ProjectError(tServer("Konum top, center ya da bottom olmalı"));
   }
   const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
   const overlay: OverlayForm = {

@@ -6,6 +6,7 @@ import { ArrowLeft, Check, Circle, ExternalLink, Loader2, RefreshCw, X } from "l
 import { Button } from "@/components/ui/button";
 import { MODEL_GROUPS } from "@/lib/comfy-models";
 import { cn } from "@/lib/utils";
+import { t } from "@/lib/i18n";
 
 type Status = { running: boolean; dir: string; dirValid: boolean };
 type ModelsView = {
@@ -76,94 +77,91 @@ export default function ComfyGuidePage() {
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-8">
       <Link href="/settings" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm">
-        <ArrowLeft className="size-4" /> Ayarlar
+        <ArrowLeft className="size-4" /> {t("Ayarlar")}
       </Link>
-      <h1 className="mt-4 text-2xl font-semibold tracking-tight">ComfyUI kurulum rehberi</h1>
+      <h1 className="mt-4 text-2xl font-semibold tracking-tight">{t("ComfyUI kurulum rehberi")}</h1>
       <p className="text-muted-foreground mt-1.5 max-w-2xl text-sm leading-relaxed">
-        ComfyUI, görselleri ve videoları kendi ekran kartında ücretsiz üretmeni sağlar. Sadece Gemini veya Pollinations
-        kullanacaksan buna gerek yok. Kurulum bir kez yapılır, sonrasında IGOR ComfyUI&apos;yi gerektiğinde arka planda
-        kendisi başlatır.
+        {t("ComfyUI, görselleri ve videoları kendi ekran kartında ücretsiz üretmeni sağlar. Sadece Gemini veya Pollinations kullanacaksan buna gerek yok. Kurulum bir kez yapılır, sonrasında IGOR ComfyUI'yi gerektiğinde arka planda kendisi başlatır.")}
       </p>
 
       <StatusBar status={status} models={models} checking={checking} onCheck={check} />
 
       <ol className="mt-6 flex flex-col gap-4">
-        <Step n={1} title="Bilgisayarın uygun mu?">
+        <Step n={1} title={t("Bilgisayarın uygun mu?")}>
           <ul className="text-muted-foreground grid gap-1.5 text-sm sm:grid-cols-2">
-            <li>NVIDIA ekran kartı, en az 8 GB VRAM</li>
-            <li>16 GB RAM, FLUX dev ve video için 32 GB</li>
-            <li>Modeller için 60 GB ve üzeri boş disk</li>
-            <li>Windows 10 veya 11</li>
+            <li>{t("NVIDIA ekran kartı, en az 8 GB VRAM")}</li>
+            <li>{t("16 GB RAM, FLUX dev ve video için 32 GB")}</li>
+            <li>{t("Modeller için 60 GB ve üzeri boş disk")}</li>
+            <li>{t("Windows 10 veya 11")}</li>
           </ul>
         </Step>
 
-        <Step n={2} title="ComfyUI'yi indir ve aç" done={stepDone.folder}>
+        <Step n={2} title={t("ComfyUI'yi indir ve aç")} done={stepDone.folder}>
           <div className="grid gap-3 md:grid-cols-2">
-            <Option title="Portable sürüm" badge="Önerilen">
+            <Option title={t("Portable sürüm")} badge={t("Önerilen")}>
               <p>
-                GitHub&apos;daki son sürümden <Code>ComfyUI_windows_portable_nvidia.7z</Code> dosyasını indir.
+                {t("GitHub'daki son sürümden")} <Code>{t("ComfyUI_windows_portable_nvidia.7z")}</Code> {t("dosyasını indir.")}
               </p>
               <p>
                 <a href="https://www.7-zip.org" target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                  7-Zip
+                  {t("7-Zip")}
                 </a>{" "}
-                ile boş yeri bol bir sürücüye çıkar, örneğin <Code>E:\ComfyUI_windows_portable</Code>.
+                {t("ile boş yeri bol bir sürücüye çıkar, örneğin")} <Code>{t("E:\\ComfyUI_windows_portable")}</Code>.
               </p>
               <p>
-                Bir kez <Code>run_nvidia_gpu.bat</Code> dosyasına çift tıkla. Pencerede{" "}
-                <Code>To see the GUI go to</Code> yazısını görünce pencereyi kapatabilirsin.
+                {t("Bir kez")} <Code>{t("run_nvidia_gpu.bat")}</Code> {t("dosyasına çift tıkla. Pencerede")}{" "}
+                <Code>{t("To see the GUI go to")}</Code> {t("yazısını görünce pencereyi kapatabilirsin.")}
               </p>
-              <ExtLink href={RELEASES_URL}>GitHub sürümleri</ExtLink>
+              <ExtLink href={RELEASES_URL}>{t("GitHub sürümleri")}</ExtLink>
             </Option>
-            <Option title="Zaten kuruluysa">
+            <Option title={t("Zaten kuruluysa")}>
               <p>
-                Git ile kurduysan <Code>main.py</Code> ve <Code>venv</Code> klasörünün olduğu klasörü göstermen yeterli.
+                {t("Git ile kurduysan")} <Code>{t("main.py")}</Code> {t("ve")} <Code>{t("venv")}</Code> {t("klasörünün olduğu klasörü göstermen yeterli.")}
               </p>
               <p>
-                ComfyUI Desktop uygulamasını kullanıyorsan IGOR onu başlatamaz. Uygulama açıkken Ayarlar&apos;daki{" "}
-                <b>Adres</b> alanına onun adresini yaz, genelde <Code>http://127.0.0.1:8000</Code>.
+                {t("ComfyUI Desktop uygulamasını kullanıyorsan IGOR onu başlatamaz. Uygulama açıkken Ayarlar'daki")}{" "}
+                <b>{t("Adres")}</b> {t("alanına onun adresini yaz, genelde")} <Code>{t("http://127.0.0.1:8000")}</Code>.
               </p>
             </Option>
           </div>
         </Step>
 
-        <Step n={3} title="Klasörü IGOR'a göster" done={stepDone.folder}>
+        <Step n={3} title={t("Klasörü IGOR'a göster")} done={stepDone.folder}>
           <p className="text-muted-foreground mb-3 text-sm">
-            Portable sürümde ana klasörü (<Code>ComfyUI_windows_portable</Code>) ya da içindeki <Code>ComfyUI</Code>{" "}
-            klasörünü yapıştırabilirsin, ikisi de olur. Gezginde klasöre sağ tıklayıp &quot;Yol olarak kopyala&quot;
-            diyebilirsin.
+            {t("Portable sürümde ana klasörü (")}<Code>{t("ComfyUI_windows_portable")}</Code>{t(") ya da içindeki")} <Code>{t("ComfyUI")}</Code>{" "}
+            {t("klasörünü yapıştırabilirsin, ikisi de olur. Gezginde klasöre sağ tıklayıp \"Yol olarak kopyala\" diyebilirsin.")}
           </p>
           <div className="flex gap-2">
             <input
               value={dir}
               onChange={(e) => setDir(e.target.value.replace(/^"|"$/g, ""))}
-              placeholder="E:\ComfyUI_windows_portable"
+              placeholder={t("E:\\ComfyUI_windows_portable")}
               spellCheck={false}
               className="border-input placeholder:text-muted-foreground focus-visible:border-ring dark:bg-input/20 h-9 min-w-0 flex-1 rounded-md border bg-transparent px-3 text-sm outline-none"
             />
             <Button onClick={saveDir} disabled={saving || !dir.trim()}>
               {saving && <Loader2 className="animate-spin" data-icon="inline-start" />}
-              Kaydet ve kontrol et
+              {t("Kaydet ve kontrol et")}
             </Button>
           </div>
           {status && (
             <p className={cn("mt-2 flex items-center gap-1.5 text-xs", status.dirValid ? "text-emerald-500" : "text-muted-foreground")}>
               {status.dirValid ? <Check className="size-3.5" /> : <X className="size-3.5" />}
-              {status.dirValid ? "ComfyUI bu klasörde bulundu." : "Bu klasörde ComfyUI bulunamadı."}
+              {status.dirValid ? t("ComfyUI bu klasörde bulundu.") : t("Bu klasörde ComfyUI bulunamadı.")}
             </p>
           )}
         </Step>
 
-        <Step n={4} title="Modelleri indir" done={stepDone.models}>
+        <Step n={4} title={t("Modelleri indir")} done={stepDone.models}>
           <p className="text-muted-foreground mb-3 text-sm leading-relaxed">
-            Her dosyayı ComfyUI klasöründeki <Code>models</Code> içinde yanında yazan alt klasöre koy
+            {t("Her dosyayı ComfyUI klasöründeki")} <Code>{t("models")}</Code> {t("içinde yanında yazan alt klasöre koy")}
             {models?.modelsDir && (
               <>
                 {" "}
                 (<Code>{models.modelsDir}</Code>)
               </>
             )}
-            . Sadece kullanacağın grubu indirmen yeterli. Dosya adları birebir aynı olmalı.
+            {t(". Sadece kullanacağın grubu indirmen yeterli. Dosya adları birebir aynı olmalı.")}
           </p>
           <div className="flex flex-col gap-3">
             {MODEL_GROUPS.map((g) => {
@@ -174,16 +172,16 @@ export default function ComfyGuidePage() {
                   <div className="flex flex-wrap items-start gap-x-3 gap-y-1 p-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-semibold">{g.title}</h3>
-                        {g.optional && <span className="bg-muted text-muted-foreground rounded-sm px-1.5 py-0.5 text-[10px]">Opsiyonel</span>}
-                        {all && <span className="rounded-sm bg-emerald-500/15 px-1.5 py-0.5 text-[10px] text-emerald-500">Hazır</span>}
+                        <h3 className="text-sm font-semibold">{t(g.title)}</h3>
+                        {g.optional && <span className="bg-muted text-muted-foreground rounded-sm px-1.5 py-0.5 text-[10px]">{t("Opsiyonel")}</span>}
+                        {all && <span className="rounded-sm bg-emerald-500/15 px-1.5 py-0.5 text-[10px] text-emerald-500">{t("Hazır")}</span>}
                       </div>
-                      <p className="text-muted-foreground mt-1 text-xs leading-relaxed">{g.description}</p>
+                      <p className="text-muted-foreground mt-1 text-xs leading-relaxed">{t(g.description)}</p>
                     </div>
                     <div className="flex flex-wrap gap-3">
                       {g.source.map((s) => (
                         <ExtLink key={s.url} href={s.url}>
-                          {s.label}
+                          {t(s.label)}
                         </ExtLink>
                       ))}
                     </div>
@@ -200,7 +198,7 @@ export default function ComfyGuidePage() {
                           ) : (
                             <X className="text-destructive size-3.5 shrink-0" />
                           )}
-                          <span className="text-muted-foreground shrink-0 font-mono">models/{m.folder}/</span>
+                          <span className="text-muted-foreground shrink-0 font-mono">{t("models/")}{m.folder}/</span>
                           <span className="min-w-0 truncate font-mono" title={m.file}>
                             {m.file}
                           </span>
@@ -214,14 +212,13 @@ export default function ComfyGuidePage() {
           </div>
         </Step>
 
-        <Step n={5} title="Dene">
+        <Step n={5} title={t("Dene")}>
           <p className="text-muted-foreground text-sm">
-            Oluştur sayfasında model olarak <b>ComfyUI (Yerel) FLUX schnell</b> seç ve bir şey üret. İlk üretimde ComfyUI
-            açılıp model yüklendiği için 1-2 dakika sürebilir, sonrakiler çok daha hızlıdır. Bir sorun olursa{" "}
+            {t("Oluştur sayfasında model olarak")} <b>{t("ComfyUI (Yerel) FLUX schnell")}</b> {t("seç ve bir şey üret. İlk üretimde ComfyUI açılıp model yüklendiği için 1-2 dakika sürebilir, sonrakiler çok daha hızlıdır. Bir sorun olursa")}{" "}
             <Link href="/debug" className="text-primary hover:underline">
-              Hatalar
+              {t("Hatalar")}
             </Link>{" "}
-            sayfasına bak.
+            {t("sayfasına bak.")}
           </p>
         </Step>
       </ol>
@@ -243,21 +240,21 @@ function StatusBar({
   const total = models?.groups.reduce((n, g) => n + g.models.length, 0) ?? 0;
   const ok = models?.groups.reduce((n, g) => n + g.models.filter((m) => m.ok).length, 0) ?? 0;
   const items = [
-    { label: "Klasör", ok: status?.dirValid, text: status ? (status.dirValid ? "bulundu" : "yok") : "..." },
-    { label: "Çalışıyor", ok: status?.running, text: status ? (status.running ? "evet" : "hayır, gerekince açılır") : "..." },
-    { label: "Modeller", ok: total > 0 && ok === total, text: models ? `${ok} / ${total}` : "..." },
+    { label: t("Klasör"), ok: status?.dirValid, text: status ? (status.dirValid ? t("bulundu") : t("bulunamadı")) : "..." },
+    { label: t("Çalışıyor"), ok: status?.running, text: status ? (status.running ? t("evet") : t("hayır, gerekince açılır")) : "..." },
+    { label: t("Modeller"), ok: total > 0 && ok === total, text: models ? `${ok} / ${total}` : "..." },
   ];
   return (
     <div className="bg-card ring-foreground/10 mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg px-4 py-3 ring-1">
       {items.map((i) => (
-        <span key={i.label} className="flex items-center gap-2 text-sm">
+        <span key={t(i.label)} className="flex items-center gap-2 text-sm">
           <span className={cn("size-2 rounded-full", i.ok ? "bg-emerald-500" : "bg-muted-foreground/60")} />
-          <span className="text-muted-foreground">{i.label}:</span> {i.text}
+          <span className="text-muted-foreground">{t(i.label)}:</span> {i.text}
         </span>
       ))}
       <Button variant="ghost" size="sm" onClick={onCheck} disabled={checking} className="ml-auto">
         <RefreshCw className={cn(checking && "animate-spin")} data-icon="inline-start" />
-        Tekrar kontrol et
+        {t("Tekrar kontrol et")}
       </Button>
     </div>
   );

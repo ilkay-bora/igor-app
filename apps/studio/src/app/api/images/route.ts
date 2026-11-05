@@ -2,6 +2,7 @@ import { runComfyGeneration } from "@/lib/comfy-server";
 import { runGeminiGeneration } from "@/lib/gemini-server";
 import { decodeImage, readGenerations, saveGeneration } from "@/lib/generations";
 import { MODELS, RATIO_DIMENSIONS, type Ratio } from "@/lib/providers";
+import { tServer } from "@/lib/i18n-server";
 
 // One-call image generation for agents (MCP generate_image): generates,
 // saves to the gallery and returns the gallery record, whose `url` can go
@@ -27,10 +28,10 @@ export async function POST(request: Request) {
 
   if (!prompt) return Response.json({ error: "prompt gerekli" }, { status: 400 });
   if (!model) {
-    return Response.json({ error: `model şunlardan biri olmalı: ${Object.keys(MODEL_ALIASES).join(", ")}` }, { status: 400 });
+    return Response.json({ error: tServer("model şunlardan biri olmalı: {v1}", { v1: Object.keys(MODEL_ALIASES).join(", ") }) }, { status: 400 });
   }
   if (!(ratio in RATIO_DIMENSIONS)) {
-    return Response.json({ error: `ratio şunlardan biri olmalı: ${Object.keys(RATIO_DIMENSIONS).join(", ")}` }, { status: 400 });
+    return Response.json({ error: tServer("ratio şunlardan biri olmalı: {v1}", { v1: Object.keys(RATIO_DIMENSIONS).join(", ") }) }, { status: 400 });
   }
 
   try {
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
       ({ imageUrl } = await runGeminiGeneration({ prompt, ratio }));
     }
     const decoded = decodeImage(imageUrl);
-    if (!decoded) throw new Error("Model geçerli bir görsel döndürmedi");
+    if (!decoded) throw new Error(tServer("Model geçerli bir görsel döndürmedi"));
     const record = await saveGeneration({
       prompt,
       ...decoded,

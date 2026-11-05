@@ -1,4 +1,5 @@
 import type { ImageCrop, MotionType } from "@/lib/editor-motion";
+import { t } from "@/lib/i18n";
 // Free-form tags group images and voice clips however the user likes
 // (per project, per social account, per client). Stored as plain strings.
 export function normalizeTag(raw: string): string {
@@ -81,7 +82,7 @@ export async function generatePollinationsImage(prompt: string, ratio: Ratio): P
     const res = await fetch(`/api/pollinations?${params.toString()}`);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || `Pollinations hatası (${res.status})`);
+      throw new Error(data.error || t("Pollinations hatası ({status})", { status: res.status }));
     }
     return blobToDataUrl(await res.blob());
   });
@@ -109,7 +110,7 @@ export async function generateComfyImage(params: {
       }),
     });
     const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error || `ComfyUI hatası (${res.status})`);
+    if (!res.ok || data.error) throw new Error(data.error || t("ComfyUI hatası ({status})", { status: res.status }));
     return { url: data.imageUrl as string, ms: data.ms as number };
   }, 0); // local generation failures are usually config errors, not transient — don't retry
 }
@@ -141,7 +142,7 @@ export async function generateStorybookReference(params: {
       }),
     });
     const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error || `Gemini hatası (${res.status})`);
+    if (!res.ok || data.error) throw new Error(data.error || t("Gemini hatası ({status})", { status: res.status }));
     return { url: data.imageUrl as string };
   }
 
@@ -159,7 +160,7 @@ export async function generateStorybookReference(params: {
     }),
   });
   const data = await res.json();
-  if (!res.ok || data.error) throw new Error(data.error || `ComfyUI hatası (${res.status})`);
+  if (!res.ok || data.error) throw new Error(data.error || t("ComfyUI hatası ({status})", { status: res.status }));
   return { url: data.imageUrl as string, ms: data.ms as number };
 }
 
@@ -171,7 +172,7 @@ export async function generateGeminiImage(prompt: string, ratio: Ratio) {
       body: JSON.stringify({ prompt, ratio }),
     });
     const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error || `Gemini hatası (${res.status})`);
+    if (!res.ok || data.error) throw new Error(data.error || t("Gemini hatası ({status})", { status: res.status }));
     return data.imageUrl as string;
   });
 }
@@ -202,7 +203,7 @@ export async function persistImage(params: {
     body: JSON.stringify(params),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Görsel kaydedilemedi");
+  if (!res.ok) throw new Error(data.error || t("Görsel kaydedilemedi"));
   return data as SavedGeneration;
 }
 
@@ -210,7 +211,7 @@ export async function deleteGeneration(id: string): Promise<void> {
   const res = await fetch(`/api/generations/${id}`, { method: "DELETE" });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || "Görsel silinemedi");
+    throw new Error(data.error || t("Görsel silinemedi"));
   }
 }
 
@@ -235,7 +236,7 @@ export function logError(entry: {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(entry),
-  }).catch((err) => console.error("Hata loglanamadı:", err));
+  }).catch((err) => console.error(t("Hata loglanamadı:"), err));
 }
 
 export async function fetchErrors(): Promise<ErrorEntry[]> {
@@ -414,7 +415,7 @@ export async function enqueueVideoJob(params: { prompt: string } & VideoGenParam
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || "Video kuyruğa eklenemedi");
+    throw new Error(data.error || t("Video kuyruğa eklenemedi"));
   }
   return res.json();
 }
@@ -466,7 +467,7 @@ export async function enqueueVideoProject(params: {
     body: JSON.stringify(params),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Proje kuyruğa eklenemedi");
+  if (!res.ok) throw new Error(data.error || t("Proje kuyruğa eklenemedi"));
   return data;
 }
 
@@ -594,7 +595,7 @@ export async function enqueueEditorProject(params: {
     body: JSON.stringify(params),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Düzenleme kuyruğa eklenemedi");
+  if (!res.ok) throw new Error(data.error || t("Düzenleme kuyruğa eklenemedi"));
   return data;
 }
 
@@ -681,7 +682,7 @@ export async function generateVoiceClip(params: {
     body: JSON.stringify(params),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Ses üretilemedi");
+  if (!res.ok) throw new Error(data.error || t("Ses üretilemedi"));
   return data as VoiceClip;
 }
 
@@ -701,6 +702,6 @@ export const TTS_MAX_BYTES = 4000;
 export async function fetchVoicePreviewUrl(voice: string): Promise<string> {
   const res = await fetch(`/api/voices/preview?voice=${encodeURIComponent(voice)}`);
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Ses örneği üretilemedi");
+  if (!res.ok) throw new Error(data.error || t("Ses örneği üretilemedi"));
   return data.url as string;
 }

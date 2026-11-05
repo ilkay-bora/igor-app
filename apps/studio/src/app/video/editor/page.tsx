@@ -34,6 +34,7 @@ import {
   type TransitionType,
   type VoiceClip,
 } from "@/lib/providers";
+import { locale, t } from "@/lib/i18n";
 
 const MIN_SPAN = 0.2;
 const MAX_VOLUME = 2;
@@ -76,7 +77,7 @@ function VolumeControl({ value, onChange }: { value: number; onChange: (v: numbe
   const percent = Math.round(value * 1000) / 10;
   return (
     <span className="flex items-center gap-2">
-      Ses seviyesi
+      {t("Ses seviyesi")}
       <Range
         min={0}
         max={MAX_VOLUME}
@@ -88,7 +89,7 @@ function VolumeControl({ value, onChange }: { value: number; onChange: (v: numbe
       <input
         type="text"
         inputMode="decimal"
-        aria-label="Ses seviyesi yüzdesi"
+        aria-label={t("Ses seviyesi yüzdesi")}
         value={draft ?? String(percent).replace(".", ",")}
         onChange={(e) => {
           setDraft(e.target.value);
@@ -168,15 +169,15 @@ function ClipPanel({
         className="max-h-72 w-full rounded-lg bg-black"
       />
       <div className="text-muted-foreground flex justify-between text-xs tabular-nums">
-        <span>{clip.trimStart.toFixed(1)}sn</span>
-        <span>Süre: {(clip.trimEnd - clip.trimStart).toFixed(1)}sn</span>
-        <span>{clip.trimEnd.toFixed(1)}sn</span>
+        <span>{clip.trimStart.toFixed(1)}{t("sn")}</span>
+        <span>{t("Süre:")} {(clip.trimEnd - clip.trimStart).toFixed(1)}{t("sn")}</span>
+        <span>{clip.trimEnd.toFixed(1)}{t("sn")}</span>
       </div>
       <div className="flex flex-wrap items-center gap-4">
         <Toggle
           checked={clip.muteOriginal}
           onChange={(v) => onChange({ muteOriginal: v })}
-          label="Orijinal sesi kapat"
+          label={t("Orijinal sesi kapat")}
         />
         {!clip.muteOriginal && (
           <div className="text-xs">
@@ -185,7 +186,7 @@ function ClipPanel({
         )}
         <Button size="sm" variant="secondary" disabled={clip.audioExtracted} onClick={onExtractAudio}>
           <AudioLines className="size-3.5" />
-          {clip.audioExtracted ? "Ses ayrıldı" : "Sesi ayır"}
+          {clip.audioExtracted ? t("Ses ayrıldı") : t("Sesi ayır")}
         </Button>
       </div>
     </div>
@@ -427,10 +428,10 @@ export default function EditorPage() {
         const draftHasContent =
           !!draft && (draft.timeline.length > 0 || draft.overlays.length > 0 || draft.audioLayers.length > 0);
         if (!project) {
-          window.alert("Proje bulunamadı, mevcut taslak açılıyor.");
+          window.alert(t("Proje bulunamadı, mevcut taslak açılıyor."));
         } else if (
           !draftHasContent ||
-          window.confirm(`"${project.name}" projesi açılsın mı? Editördeki mevcut taslağın yerine geçecek.`)
+          window.confirm(t("\"{name}\" projesi açılsın mı? Editördeki mevcut taslağın yerine geçecek.", { name: project.name }))
         ) {
           draft = project.draft;
         }
@@ -465,8 +466,8 @@ export default function EditorPage() {
       });
       setDraftStatus(
         saved
-          ? `Kaydedildi, ${new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}`
-          : "Otomatik kayıt başarısız"
+          ? t("Kaydedildi, {v1}", { v1: new Date().toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" }) })
+          : t("Otomatik kayıt başarısız")
       );
     }, 400);
     return () => clearTimeout(timer);
@@ -792,7 +793,7 @@ export default function EditorPage() {
           // rearranged/retrimmed and given real transitions here.
           items.push({
             sourceUrl: j.url,
-            label: `Proje sahnesi ${(j.sceneIndex ?? 0) + 1}: ${j.prompt}`,
+            label: t("Proje sahnesi {n}: {prompt}", { n: (j.sceneIndex ?? 0) + 1, prompt: j.prompt }),
             duration: j.durationSeconds,
             kind: "proje sahnesi",
             portrait: j.height > j.width,
@@ -811,7 +812,7 @@ export default function EditorPage() {
         if (p.status === "done" && p.finalUrl) {
           items.push({
             sourceUrl: p.finalUrl,
-            label: `Proje (${p.sceneCount} sahne, tümü, kesmeli)`,
+            label: t("Proje ({sceneCount} sahne, tümü, kesmeli)", { sceneCount: p.sceneCount }),
             duration: 0,
             kind: "sahne projesi (tümü)",
           });
@@ -881,7 +882,7 @@ export default function EditorPage() {
     const index = timeline.findIndex((c) => c.key === clip.key);
     addAudioLayer({
       kind: "extracted",
-      label: `Klip ${index + 1} sesi`,
+      label: t("Klip {n} sesi", { n: index + 1 }),
       src: clip.sourceUrl,
       start: cumulativeDurationBefore(index),
       trimStart: clip.trimStart,
@@ -1012,7 +1013,7 @@ export default function EditorPage() {
       };
       probe.onerror = () => {
         URL.revokeObjectURL(url);
-        reject(new Error(`${file.name} okunamadı`));
+        reject(new Error(t("{name} okunamadı", { name: file.name })));
       };
       probe.src = url;
     });
@@ -1032,7 +1033,7 @@ export default function EditorPage() {
           body: file,
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Video yüklenemedi");
+        if (!res.ok) throw new Error(data.error || t("Video yüklenemedi"));
         const item: LibraryItem = { sourceUrl: data.url, label: file.name, duration, kind: "clip", portrait };
         setLibrary((prev) => [item, ...prev]);
         addToTimeline(item);
@@ -1407,7 +1408,7 @@ export default function EditorPage() {
   }
 
   async function handleNewProject() {
-    if (!window.confirm("Çizelge ve tüm katmanlar silinecek. Yeni projeye başlansın mı?")) return;
+    if (!window.confirm(t("Çizelge ve tüm katmanlar silinecek. Yeni projeye başlansın mı?"))) return;
     setTimeline([]);
     setSelectedKey(null);
     setSelectedLayer(null);
@@ -1426,7 +1427,7 @@ export default function EditorPage() {
   // project keeps only what the render needed; labels and source lengths are
   // looked up again. The original stays, the revision renders as a new entry.
   async function handleEditProject(project: EditorProject) {
-    if (timeline.length > 0 && !window.confirm("Çizelgedeki mevcut çalışma bu videoyla değiştirilecek. Devam edilsin mi?")) {
+    if (timeline.length > 0 && !window.confirm(t("Çizelgedeki mevcut çalışma bu videoyla değiştirilecek. Devam edilsin mi?"))) {
       return;
     }
     const fileName = (url: string) => url.split("/").pop() ?? url;
@@ -1452,7 +1453,7 @@ export default function EditorPage() {
           ...l,
           key: crypto.randomUUID(),
           kind: clipIndex >= 0 ? "extracted" : l.src.startsWith("/voices/") || !l.loop ? "voice" : "music",
-          label: l.filename ?? (clipIndex >= 0 ? `Klip ${clipIndex + 1} sesi` : fileName(l.src)),
+          label: l.filename ?? (clipIndex >= 0 ? t("Klip {n} sesi", { n: clipIndex + 1 }) : fileName(l.src)),
           sourceDuration: await probeDuration(l.src, l.trimEnd),
           loop: l.loop ?? false,
         } satisfies AudioLayer;
@@ -1525,7 +1526,7 @@ export default function EditorPage() {
   }
 
   async function handleDeleteProject(id: string) {
-    if (!window.confirm("Bu düzenlemeyi silmek istediğine emin misin?")) return;
+    if (!window.confirm(t("Bu düzenlemeyi silmek istediğine emin misin?"))) return;
     await deleteEditorProject(id);
     await loadProjects();
   }
@@ -1589,18 +1590,18 @@ export default function EditorPage() {
   return (
     <main className="flex h-[calc(100dvh-3.5rem)] w-full flex-col gap-3 overflow-hidden px-4 py-3">
       <div className="flex shrink-0 flex-wrap items-center gap-3">
-        <h1 className="text-base font-semibold tracking-tight">Video Editörü</h1>
+        <h1 className="text-base font-semibold tracking-tight">{t("Video Editörü")}</h1>
         <span className="text-muted-foreground text-xs tabular-nums">
-          {timeline.length} klip · {totalDuration.toFixed(1)}sn
+          {timeline.length} {t("klip ·")} {totalDuration.toFixed(1)}{t("sn")}
         </span>
         <div className="ml-auto flex items-center gap-3">
           <RatioPicker compact options={VIDEO_RESOLUTION_OPTIONS} value={resolution} onChange={setResolution} />
           <span className="text-muted-foreground text-xs">{draftStatus}</span>
           <Button variant="secondary" onClick={handleNewProject} disabled={timeline.length === 0}>
-            Yeni proje
+            {t("Yeni proje")}
           </Button>
           <Button onClick={handleRender} disabled={timeline.length === 0}>
-            Videoyu Oluştur
+            {t("Videoyu Oluştur")}
           </Button>
         </div>
       </div>
@@ -1617,7 +1618,7 @@ export default function EditorPage() {
                     sideTab === tab ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {tab === "library" ? "Kütüphane" : `Render'lar${projects.length ? ` (${projects.length})` : ""}`}
+                  {tab === "library" ? t("Kütüphane") : `${t("Render'lar")}${projects.length ? ` (${projects.length})` : ""}`}
                 </button>
               ))}
             </div>
@@ -1625,11 +1626,11 @@ export default function EditorPage() {
             <>
             {library.length === 0 ? (
               <p className="text-muted-foreground text-sm">
-                Henüz eklenebilecek bitmiş video yok.{" "}
+                {t("Henüz eklenebilecek bitmiş video yok.")}{" "}
                 <Link href="/video" className="text-primary underline-offset-4 hover:underline">
-                  Video sayfasından
+                  {t("Video sayfasından")}
                 </Link>{" "}
-                üret.
+                {t("üret.")}
               </p>
             ) : (
               <div className="thin-scrollbar flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1">
@@ -1648,9 +1649,9 @@ export default function EditorPage() {
                       className="h-12 w-16 shrink-0 rounded object-cover"
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="line-clamp-1 text-xs">{item.label}</p>
+                      <p className="line-clamp-1 text-xs">{t(item.label)}</p>
                       <Badge variant="secondary" className="mt-1 text-[10px]">
-                        {item.kind}
+                        {t(item.kind)}
                       </Badge>
                     </div>
                     <Button size="sm" variant="secondary" onClick={() => addToTimeline(item)}>
@@ -1661,13 +1662,13 @@ export default function EditorPage() {
               </div>
             )}
             <p className="text-muted-foreground text-[11px]">
-              Sürükleyip zaman çizelgesine bırakabilir, ya da + ile sona ekleyebilirsin.
+              {t("Sürükleyip zaman çizelgesine bırakabilir, ya da + ile sona ekleyebilirsin.")}
             </p>
             </>
             ) : (
             <div className="thin-scrollbar flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1">
               {projects.length === 0 && (
-                <p className="text-muted-foreground text-sm">Henüz render alınmadı.</p>
+                <p className="text-muted-foreground text-sm">{t("Henüz render alınmadı.")}</p>
               )}
           {projects.map((project) => (
             <Card key={project.id} size="sm" className="shrink-0">
@@ -1676,7 +1677,7 @@ export default function EditorPage() {
                   {(project.status === "running" || project.status === "queued") && (
                     <div className="flex flex-col items-center gap-2">
                       <Loader2 className="text-primary size-6 animate-spin" />
-                      <span className="text-muted-foreground text-xs">Oluşturuluyor...</span>
+                      <span className="text-muted-foreground text-xs">{t("Oluşturuluyor...")}</span>
                       <ElapsedTimer since={project.createdAt} />
                     </div>
                   )}
@@ -1703,23 +1704,23 @@ export default function EditorPage() {
                 </div>
                 <div className="flex flex-1 flex-col gap-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="secondary">{project.clips.length} klip</Badge>
-                    {project.musicUrl && <Badge variant="secondary">Müzikli</Badge>}
-                    {project.voiceUrl && <Badge variant="secondary">Seslendirmeli</Badge>}
+                    <Badge variant="secondary">{project.clips.length} {t("klip")}</Badge>
+                    {project.musicUrl && <Badge variant="secondary">{t("Müzikli")}</Badge>}
+                    {project.voiceUrl && <Badge variant="secondary">{t("Seslendirmeli")}</Badge>}
                     {(project.audioLayers?.length ?? 0) > 0 && (
-                      <Badge variant="secondary">{project.audioLayers!.length} ses katmanı</Badge>
+                      <Badge variant="secondary">{project.audioLayers!.length} {t("ses katmanı")}</Badge>
                     )}
                     {(project.imageLayers?.length ?? 0) > 0 && (
-                      <Badge variant="secondary">{project.imageLayers!.length} görsel</Badge>
+                      <Badge variant="secondary">{project.imageLayers!.length} {t("görsel")}</Badge>
                     )}
                     {(project.strips?.length ?? 0) > 0 && (
-                      <Badge variant="secondary">{project.strips!.length} şerit</Badge>
+                      <Badge variant="secondary">{project.strips!.length} {t("şerit")}</Badge>
                     )}
                     {project.overlays.length > 0 && (
-                      <Badge variant="secondary">{project.overlays.length} yazı</Badge>
+                      <Badge variant="secondary">{project.overlays.length} {t("yazı")}</Badge>
                     )}
                     <span className="text-muted-foreground w-full text-[11px]">
-                      {new Date(project.createdAt).toLocaleString("tr-TR")}
+                      {new Date(project.createdAt).toLocaleString(locale())}
                     </span>
                   </div>
                   <div className="mt-auto flex items-center gap-3">
@@ -1729,7 +1730,7 @@ export default function EditorPage() {
                         onClick={() => handleEditProject(project)}
                         className="text-primary text-sm font-medium underline-offset-4 hover:underline"
                       >
-                        Düzenle
+                        {t("Düzenle")}
                       </button>
                     )}
                     {project.status === "done" && project.finalUrl && (
@@ -1738,7 +1739,7 @@ export default function EditorPage() {
                         download
                         className="text-primary text-sm font-medium underline-offset-4 hover:underline"
                       >
-                        İndir
+                        {t("İndir")}
                       </a>
                     )}
                     <button
@@ -1746,7 +1747,7 @@ export default function EditorPage() {
                       onClick={() => handleDeleteProject(project.id)}
                       className="text-destructive text-sm font-medium underline-offset-4 hover:underline"
                     >
-                      Sil
+                      {t("Sil")}
                     </button>
                   </div>
                 </div>
@@ -1761,15 +1762,15 @@ export default function EditorPage() {
       <Card size="sm" className="min-h-0">
         <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Genel Önizleme</h2>
+            <h2 className="text-sm font-semibold">{t("Genel Önizleme")}</h2>
             <span className="text-muted-foreground text-xs tabular-nums">
-              {previewGlobalTime.toFixed(1)}sn / {totalDuration.toFixed(1)}sn
+              {previewGlobalTime.toFixed(1)}{t("sn /")} {totalDuration.toFixed(1)}{t("sn")}
             </span>
           </div>
 
           {timeline.length === 0 ? (
             <div className="border-border text-muted-foreground flex min-h-0 flex-1 items-center justify-center rounded-lg border-2 border-dashed text-sm">
-              Önizlemek için zaman çizelgesine klip ekle
+              {t("Önizlemek için zaman çizelgesine klip ekle")}
             </div>
           ) : (
             <>
@@ -1855,7 +1856,7 @@ export default function EditorPage() {
                               <div
                                 key={position}
                                 data-handle="resize"
-                                title="Boyutlandır"
+                                title={t("Boyutlandır")}
                                 onMouseDown={(e) => startImageResize(e, l)}
                                 className={cn(
                                   "bg-primary absolute z-10 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white",
@@ -1874,7 +1875,7 @@ export default function EditorPage() {
                               <div
                                 key={side}
                                 data-handle={`crop-${side}`}
-                                title="Kırp"
+                                title={t("Kırp")}
                                 onMouseDown={(e) => startImageCrop(e, l, side)}
                                 className={cn(
                                   "absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-black/60 bg-white",
@@ -1966,7 +1967,7 @@ export default function EditorPage() {
                           paintOrder: "stroke fill",
                         }}
                       >
-                        {o.text || "Metin"}
+                        {o.text || t("Metin")}
                       </span>
                     );
                   })}
@@ -1998,7 +1999,7 @@ export default function EditorPage() {
                   onMouseLeave={() => setScrubHover(null)}
                   className="group/scrub relative flex h-5 w-full cursor-pointer items-center select-none"
                   role="slider"
-                  aria-label="Oynatma konumu"
+                  aria-label={t("Oynatma konumu")}
                   aria-valuemin={0}
                   aria-valuemax={Math.round(totalDuration * 10) / 10}
                   aria-valuenow={Math.round(previewGlobalTime * 10) / 10}
@@ -2056,23 +2057,23 @@ export default function EditorPage() {
                     {previewPlaying ? (
                       <>
                         <Pause className="size-4" />
-                        Durdur
+                        {t("Durdur")}
                       </>
                     ) : (
                       <>
                         <Play className="size-4" />
-                        Önizle
+                        {t("Önizle")}
                       </>
                     )}
                   </Button>
                   <span className="text-muted-foreground text-xs tabular-nums">
                     <span className="text-foreground font-medium">{formatClock(previewGlobalTime)}</span> /{" "}
-                    {formatClock(totalDuration)} · Sahne{" "}
+                    {formatClock(totalDuration)} {t("· Sahne")}{" "}
                     {Math.min(previewIndex + 1, timeline.length)}/{timeline.length}
                   </span>
 
                   <label className="ml-auto flex items-center gap-2 text-xs">
-                    Klip sesi
+                    {t("Klip sesi")}
                     <Range
                       min={0}
                       max={1}
@@ -2094,7 +2095,7 @@ export default function EditorPage() {
           {selectedClip && (
             <Card size="sm" className="shrink-0">
               <CardContent>
-                <h2 className="mb-3 text-sm font-semibold">Klip: {selectedClip.label}</h2>
+                <h2 className="mb-3 text-sm font-semibold">{t("Klip:")} {t(selectedClip.label)}</h2>
                 <ClipPanel
                   clip={selectedClip}
                   onChange={(patch) => updateClip(selectedClip.key, patch)}
@@ -2108,7 +2109,7 @@ export default function EditorPage() {
             <CardContent className="flex flex-col gap-4">
               {selectedAudio && (
                 <div className="flex flex-col gap-3">
-                  <h3 className="text-sm font-semibold">Ses katmanı: {selectedAudio.label}</h3>
+                  <h3 className="text-sm font-semibold">{t("Ses katmanı:")} {t(selectedAudio.label)}</h3>
                   <div className="flex flex-wrap items-center gap-4 text-xs">
                     <VolumeControl
                       key={selectedAudio.key}
@@ -2116,7 +2117,7 @@ export default function EditorPage() {
                       onChange={(volume) => updateAudioLayer(selectedAudio.key, { volume })}
                     />
                     <label className="flex items-center gap-2">
-                      Başlangıç (sn)
+                      {t("Başlangıç (sn)")}
                       <input
                         type="number"
                         min={0}
@@ -2130,12 +2131,12 @@ export default function EditorPage() {
                       <Toggle
                         checked={selectedAudio.loop}
                         onChange={(loop) => updateAudioLayer(selectedAudio.key, { loop })}
-                        label="Tekrarla"
+                        label={t("Tekrarla")}
                       />
                     )}
                     <Button size="sm" variant="secondary" onClick={removeSelected} className="ml-auto">
                       <X className="size-3.5" />
-                      Sil
+                      {t("Sil")}
                     </Button>
                   </div>
                 </div>
@@ -2143,17 +2144,17 @@ export default function EditorPage() {
 
               {selectedStrip && (
                 <div className="flex flex-col gap-3">
-                  <h3 className="text-sm font-semibold">Şerit</h3>
+                  <h3 className="text-sm font-semibold">{t("Şerit")}</h3>
                   <input
                     type="text"
-                    placeholder="Şerit yazısı (büyük harfe çevrilir, uzunsa iki satıra iner)"
+                    placeholder={t("Şerit yazısı (büyük harfe çevrilir, uzunsa iki satıra iner)")}
                     value={selectedStrip.text}
                     onChange={(e) => updateStrip(selectedStrip.key, { text: e.target.value })}
                     className="border-input rounded border bg-transparent px-2 py-1.5 text-sm"
                   />
                   <div className="flex flex-wrap items-center gap-4 text-xs">
                     <label className="flex items-center gap-2">
-                      Yükseklik
+                      {t("Yükseklik")}
                       <Range
                         min={0.1}
                         max={0.92}
@@ -2165,7 +2166,7 @@ export default function EditorPage() {
                     </label>
                     <Button size="sm" variant="secondary" onClick={removeSelected} className="ml-auto">
                       <X className="size-3.5" />
-                      Sil
+                      {t("Sil")}
                     </Button>
                   </div>
                 </div>
@@ -2173,10 +2174,10 @@ export default function EditorPage() {
 
               {selectedText && (
                 <div className="flex flex-col gap-3">
-                  <h3 className="text-sm font-semibold">Yazı</h3>
+                  <h3 className="text-sm font-semibold">{t("Yazı")}</h3>
                   <input
                     type="text"
-                    placeholder="Metin"
+                    placeholder={t("Metin")}
                     value={selectedText.text}
                     onChange={(e) => updateOverlay(selectedText.key, { text: e.target.value })}
                     className="border-input rounded border bg-transparent px-2 py-1.5 text-sm"
@@ -2187,18 +2188,18 @@ export default function EditorPage() {
                       onValueChange={(v) => v && updateOverlay(selectedText.key, { motion: v as MotionType })}
                     >
                       <SelectTrigger className="h-7 w-44 text-xs">
-                        <SelectValue>{(value: MotionType) => MOTIONS.find((m) => m.value === value)?.label}</SelectValue>
+                        <SelectValue>{(value: MotionType) => t(MOTIONS.find((m) => m.value === value)?.label)}</SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {MOTIONS.map((m) => (
                           <SelectItem key={m.value} value={m.value}>
-                            {m.label}
+                            {t(m.label)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     <label className="flex items-center gap-2">
-                      Boyut
+                      {t("Boyut")}
                       <input
                         type="number"
                         min={16}
@@ -2209,7 +2210,7 @@ export default function EditorPage() {
                       />
                     </label>
                     <label className="flex items-center gap-2">
-                      Renk
+                      {t("Renk")}
                       <input
                         type="color"
                         value={selectedText.color}
@@ -2220,9 +2221,9 @@ export default function EditorPage() {
                     <div className="flex items-center gap-1">
                       {(
                         [
-                          ["top", "Üst"],
-                          ["center", "Orta"],
-                          ["bottom", "Alt"],
+                          ["top", t("Üst")],
+                          ["center", t("Orta")],
+                          ["bottom", t("Alt")],
                         ] as const
                       ).map(([position, label]) => (
                         <Button
@@ -2237,39 +2238,39 @@ export default function EditorPage() {
                     </div>
                     <Button size="sm" variant="secondary" onClick={removeSelected} className="ml-auto">
                       <X className="size-3.5" />
-                      Sil
+                      {t("Sil")}
                     </Button>
                   </div>
                   <p className="text-muted-foreground text-[11px]">
                     {selectedText.motion === "marquee"
-                      ? "Kayan yazı ekranı boydan boya geçer, önizlemede yalnızca yukarı aşağı sürüklenir."
-                      : "Yerini önizlemede sürükleyerek ayarla."}{" "}
-                    Durdururken seçili katman sabit görünür, hareketini Önizle ile izlersin.
+                      ? t("Kayan yazı ekranı boydan boya geçer, önizlemede yalnızca yukarı aşağı sürüklenir.")
+                      : t("Yerini önizlemede sürükleyerek ayarla.")}{" "}
+                    {t("Durdururken seçili katman sabit görünür, hareketini Önizle ile izlersin.")}
                   </p>
                 </div>
               )}
 
               {selectedImage && (
                 <div className="flex flex-col gap-3">
-                  <h3 className="text-sm font-semibold">Görsel: {selectedImage.label}</h3>
+                  <h3 className="text-sm font-semibold">{t("Görsel:")} {t(selectedImage.label)}</h3>
                   <div className="flex flex-wrap items-center gap-4 text-xs">
                     <Select
                       value={selectedImage.motion}
                       onValueChange={(v) => v && updateImage(selectedImage.key, { motion: v as MotionType })}
                     >
                       <SelectTrigger className="h-7 w-44 text-xs">
-                        <SelectValue>{(value: MotionType) => MOTIONS.find((m) => m.value === value)?.label}</SelectValue>
+                        <SelectValue>{(value: MotionType) => t(MOTIONS.find((m) => m.value === value)?.label)}</SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {MOTIONS.map((m) => (
                           <SelectItem key={m.value} value={m.value}>
-                            {m.label}
+                            {t(m.label)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     <label className="flex items-center gap-2">
-                      Boyut
+                      {t("Boyut")}
                       <Range
                         min={MIN_IMAGE_WIDTH}
                         max={MAX_IMAGE_WIDTH}
@@ -2281,7 +2282,7 @@ export default function EditorPage() {
                       {Math.round(selectedImage.widthPct * 100)}%
                     </label>
                     <label className="flex items-center gap-2">
-                      Açı
+                      {t("Açı")}
                       <Range
                         min={-180}
                         max={180}
@@ -2293,18 +2294,18 @@ export default function EditorPage() {
                     </label>
                     <Button size="sm" variant="secondary" onClick={removeSelected} className="ml-auto">
                       <X className="size-3.5" />
-                      Sil
+                      {t("Sil")}
                     </Button>
                   </div>
                   <div className="flex flex-wrap items-center gap-4 text-xs">
                     {CROP_SIDES.map(({ side, label }) => (
                       <label key={side} className="flex items-center gap-2">
-                        {label}
+                        {t(label)}
                         <Range
                           min={0}
                           max={0.95}
                           step={0.005}
-                          aria-label={`${label} kırpma`}
+                          aria-label={t("{label} kırpma", { label })}
                           value={(selectedImage.crop ?? NO_CROP)[side]}
                           onChange={(e) => updateImage(selectedImage.key, cropPatch(selectedImage, side, Number(e.target.value)))}
                           className="w-24"
@@ -2313,20 +2314,18 @@ export default function EditorPage() {
                       </label>
                     ))}
                     <Button size="sm" variant="secondary" onClick={() => resetCrop(selectedImage)}>
-                      Kırpmayı sıfırla
+                      {t("Kırpmayı sıfırla")}
                     </Button>
                   </div>
                   <p className="text-muted-foreground text-[11px]">
-                    Önizlemede ortasından sürükleyerek taşı, yuvarlak köşelerden boyutlandır, beyaz
-                    kenarlardan kırp. Durdururken seçili katman sabit görünür.
+                    {t("Önizlemede ortasından sürükleyerek taşı, yuvarlak köşelerden boyutlandır, beyaz kenarlardan kırp. Durdururken seçili katman sabit görünür.")}
                   </p>
                 </div>
               )}
 
               {!selectedLayer && (
                 <p className="text-muted-foreground text-xs">
-                  Çizelgedeki bir katmana tıklayınca ayarları burada açılır. Kenarlarından çekerek kırp,
-                  ortasından tutup kaydır, kesimlere ve diğer katmanlara kendiliğinden hizalanır. Ctrl+B oynatma çizgisinde böler, Delete siler, Boşluk oynatır.
+                  {t("Çizelgedeki bir katmana tıklayınca ayarları burada açılır. Kenarlarından çekerek kırp, ortasından tutup kaydır, kesimlere ve diğer katmanlara kendiliğinden hizalanır. Ctrl+B oynatma çizgisinde böler, Delete siler, Boşluk oynatır.")}
                 </p>
               )}
 
@@ -2339,13 +2338,13 @@ export default function EditorPage() {
             <CardContent className="thin-scrollbar flex min-h-0 flex-col gap-3 overflow-y-auto">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-sm font-semibold">
-                  Zaman Çizelgesi ({timeline.length} klip{totalDuration > 0 && `, ~${totalDuration.toFixed(1)}sn`})
+                  {t("Zaman Çizelgesi (")}{timeline.length} {t("klip")}{totalDuration > 0 && `, ~${totalDuration.toFixed(1)}${t("sn")}`})
                 </h2>
                 <div className="ml-auto">
-                  <Toggle checked={snapEnabled} onChange={setSnapEnabled} label="Hizala" />
+                  <Toggle checked={snapEnabled} onChange={setSnapEnabled} label={t("Hizala")} />
                 </div>
                 <label className="text-muted-foreground flex items-center gap-2 text-xs">
-                  Yakınlaştır
+                  {t("Yakınlaştır")}
                   <Range
                     min={4}
                     max={100}
@@ -2359,7 +2358,7 @@ export default function EditorPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <label className={cn(buttonVariants({ variant: "secondary", size: "sm" }), "cursor-pointer")}>
                   {uploadingVideo ? <Loader2 className="size-3.5 animate-spin" /> : <Clapperboard className="size-3.5" />}
-                  {uploadingVideo ? "Yükleniyor..." : "Video ekle"}
+                  {uploadingVideo ? t("Yükleniyor...") : t("Video ekle")}
                   <input
                     type="file"
                     accept="video/*,.mkv"
@@ -2369,9 +2368,9 @@ export default function EditorPage() {
                     className="hidden"
                   />
                 </label>
-                <Button size="sm" variant="secondary" onClick={splitAtPlayhead} disabled={timeline.length === 0} title="Ctrl+B">
+                <Button size="sm" variant="secondary" onClick={splitAtPlayhead} disabled={timeline.length === 0} title={t("Ctrl+B")}>
                   <Scissors className="size-3.5" />
-                  Böl
+                  {t("Böl")}
                 </Button>
                 <Button
                   size="sm"
@@ -2380,15 +2379,15 @@ export default function EditorPage() {
                   onClick={() => selectedClip && extractClipAudio(selectedClip)}
                 >
                   <AudioLines className="size-3.5" />
-                  Sesi ayır
+                  {t("Sesi ayır")}
                 </Button>
                 <Button size="sm" variant="secondary" onClick={addStrip} disabled={timeline.length === 0}>
                   <RectangleHorizontal className="size-3.5" />
-                  Şerit
+                  {t("Şerit")}
                 </Button>
                 <Button size="sm" variant="secondary" onClick={addOverlay} disabled={timeline.length === 0}>
                   <Type className="size-3.5" />
-                  Yazı
+                  {t("Yazı")}
                 </Button>
                 <label
                   className={cn(
@@ -2398,27 +2397,27 @@ export default function EditorPage() {
                   )}
                 >
                   <ImagePlus className="size-3.5" />
-                  PNG / Görsel
+                  {t("PNG / Görsel")}
                   <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleImageUpload} className="hidden" />
                 </label>
                 <label className={cn(buttonVariants({ variant: "secondary", size: "sm" }), "cursor-pointer")}>
                   <Music className="size-3.5" />
-                  Müzik
+                  {t("Müzik")}
                   <input type="file" accept="audio/*" onChange={(e) => handleAudioUpload(e, "music")} className="hidden" />
                 </label>
                 <label className={cn(buttonVariants({ variant: "secondary", size: "sm" }), "cursor-pointer")}>
                   <Mic className="size-3.5" />
-                  Ses dosyası
+                  {t("Ses dosyası")}
                   <input type="file" accept="audio/*" onChange={(e) => handleAudioUpload(e, "voice")} className="hidden" />
                 </label>
                 <Select value="" onValueChange={(v) => v && applyTransition(v as TransitionType)}>
                   <SelectTrigger className="h-8 w-44 text-xs" disabled={timeline.length < 2}>
-                    <SelectValue placeholder="Geçişi hepsine uygula" />
+                    <SelectValue placeholder={t("Geçişi hepsine uygula")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {TRANSITIONS.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
+                    {TRANSITIONS.map((tr) => (
+                      <SelectItem key={tr.value} value={tr.value}>
+                        {t(tr.label)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -2432,7 +2431,7 @@ export default function EditorPage() {
                     }}
                   >
                     <SelectTrigger className="h-8 w-44 text-xs">
-                      <SelectValue placeholder="Seslendirme kütüphanesi" />
+                      <SelectValue placeholder={t("Seslendirme kütüphanesi")} />
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
                       {voiceLibrary.map((clip) => (
@@ -2453,7 +2452,7 @@ export default function EditorPage() {
                   onDrop={() => handleBlockDrop(0)}
                   className="border-border text-muted-foreground flex h-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed text-sm"
                 >
-                  Video seçmek için tıkla ya da kütüphaneden sürükle
+                  {t("Video seçmek için tıkla ya da kütüphaneden sürükle")}
                   <input
                     type="file"
                     accept="video/*,.mkv"
@@ -2467,14 +2466,14 @@ export default function EditorPage() {
                 <div className="flex gap-2">
                   <div className="text-muted-foreground flex w-14 shrink-0 flex-col gap-2 pt-0.5 text-[11px]">
                     <div className="h-5" />
-                    <div className="flex h-16 items-center">Video</div>
-                    <div className="flex h-6 items-center">Geçiş</div>
-                    <div className="flex h-7 items-center">Görsel</div>
-                    <div className="flex h-7 items-center">Şerit</div>
-                    <div className="flex h-7 items-center">Yazı</div>
+                    <div className="flex h-16 items-center">{t("Video")}</div>
+                    <div className="flex h-6 items-center">{t("Geçiş")}</div>
+                    <div className="flex h-7 items-center">{t("Görsel")}</div>
+                    <div className="flex h-7 items-center">{t("Şerit")}</div>
+                    <div className="flex h-7 items-center">{t("Yazı")}</div>
                     {audioLayers.map((l, i) => (
                       <div key={l.key} className="flex h-7 items-center">
-                        Ses {i + 1}
+                        {t("Ses")} {i + 1}
                       </div>
                     ))}
                   </div>
@@ -2554,7 +2553,7 @@ export default function EditorPage() {
                             />
                             <GripVertical className="text-background/80 absolute top-0.5 left-2.5 size-3.5 drop-shadow" />
                             <span className="bg-background/85 absolute right-0 bottom-0 left-0 truncate px-1 text-[10px] tabular-nums">
-                              {(clip.trimEnd - clip.trimStart).toFixed(1)}sn
+                              {(clip.trimEnd - clip.trimStart).toFixed(1)}{t("sn")}
                             </span>
                             <button
                               type="button"
@@ -2585,7 +2584,7 @@ export default function EditorPage() {
                         <label
                           onDragOver={(e: DragEvent) => e.preventDefault()}
                           onDrop={() => handleBlockDrop(timeline.length)}
-                          title="Video ekle"
+                          title={t("Video ekle")}
                           className="border-border text-muted-foreground absolute top-0 flex h-16 w-12 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed text-xs"
                           style={{ left: clipLeftPx(timeline.length) + 4 }}
                         >
@@ -2614,7 +2613,7 @@ export default function EditorPage() {
                               onValueChange={(v) => v && applyTransition(v as TransitionType, i)}
                             >
                               <SelectTrigger
-                                title={TRANSITIONS.find((t) => t.value === clip.transitionAfter)?.label}
+                                title={t(TRANSITIONS.find((tr) => tr.value === clip.transitionAfter)?.label)}
                                 className={cn(
                                   "h-6 w-6 shrink-0 justify-center rounded-full border p-0 shadow [&>svg]:hidden",
                                   clip.transitionAfter === "cut"
@@ -2625,9 +2624,9 @@ export default function EditorPage() {
                                 <ArrowLeftRight className="size-3" />
                               </SelectTrigger>
                               <SelectContent>
-                                {TRANSITIONS.map((t) => (
-                                  <SelectItem key={t.value} value={t.value}>
-                                    {t.label}
+                                {TRANSITIONS.map((tr) => (
+                                  <SelectItem key={tr.value} value={tr.value}>
+                                    {t(tr.label)}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -2646,7 +2645,7 @@ export default function EditorPage() {
                             selected={selectedLayer?.key === l.key}
                             className="border-pink-500/40 bg-pink-500/20 text-pink-700 dark:text-pink-300"
                             icon={<ImagePlus className="size-3 shrink-0" />}
-                            label={l.label}
+                            label={t(l.label)}
                             onSelect={() => selectLayer("image", l.key)}
                             onDragStart={(mode, e) =>
                               startDrag("image", l.key, { a: l.startTime, b: l.endTime, c: 0 }, mode, e)
@@ -2666,7 +2665,7 @@ export default function EditorPage() {
                             selected={selectedLayer?.key === s.key}
                             className="border-sky-500/40 bg-sky-500/20 text-sky-700 dark:text-sky-300"
                             icon={<RectangleHorizontal className="size-3 shrink-0" />}
-                            label={s.text || "Şerit"}
+                            label={s.text || t("Şerit")}
                             onSelect={() => selectLayer("strip", s.key)}
                             onDragStart={(mode, e) =>
                               startDrag("strip", s.key, { a: s.startTime, b: s.endTime, c: 0 }, mode, e)
@@ -2686,7 +2685,7 @@ export default function EditorPage() {
                             selected={selectedLayer?.key === o.key}
                             className="border-amber-500/40 bg-amber-500/15 text-amber-700 dark:text-amber-400"
                             icon={<Type className="size-3 shrink-0" />}
-                            label={o.text || "Yazı"}
+                            label={o.text || t("Yazı")}
                             onSelect={() => selectLayer("text", o.key)}
                             onDragStart={(mode, e) =>
                               startDrag("text", o.key, { a: o.startTime, b: o.endTime, c: 0 }, mode, e)
@@ -2717,7 +2716,7 @@ export default function EditorPage() {
                                 <AudioLines className="size-3 shrink-0" />
                               )
                             }
-                            label={l.label}
+                            label={t(l.label)}
                             onSelect={() => selectLayer("audio", l.key)}
                             onDragStart={(mode, e) =>
                               startDrag("audio", l.key, { a: l.trimStart, b: l.trimEnd, c: l.start }, mode, e)
@@ -2737,7 +2736,7 @@ export default function EditorPage() {
       {fullscreenUrl && (
         <FullscreenViewer
           src={fullscreenUrl}
-          alt="düzenlenmiş video"
+          alt={t("düzenlenmiş video")}
           kind="video"
           onClose={() => setFullscreenUrl(null)}
         />

@@ -1,5 +1,7 @@
 import { comfyStatus } from "@/lib/comfy-launcher";
 import { getSetting, readSettings, settingSource, writeSettings, type SettingKey } from "@/lib/settings";
+import { serverLang } from "@/lib/i18n-server";
+import { isLang } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +18,7 @@ async function view() {
     })
   );
   const plain = Object.fromEntries(PLAIN_KEYS.map((k) => [k, { value: getSetting(k) ?? "", source: settingSource(k) }]));
-  return { ...secrets, ...plain, setupDone: !!readSettings().setupDone, comfy: await comfyStatus() };
+  return { ...secrets, ...plain, setupDone: !!readSettings().setupDone, language: serverLang(), comfy: await comfyStatus() };
 }
 
 export async function GET() {
@@ -24,12 +26,13 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as Partial<Record<SettingKey, string>> & { setupDone?: boolean };
+  const body = (await request.json()) as Partial<Record<SettingKey, string>> & { setupDone?: boolean; language?: string };
   const patch: Record<string, string | boolean | undefined> = {};
   for (const k of [...SECRET_KEYS, ...PLAIN_KEYS]) {
     if (typeof body[k] === "string") patch[k] = body[k];
   }
   if (typeof body.setupDone === "boolean") patch.setupDone = body.setupDone;
+  if (isLang(body.language)) patch.language = body.language;
   writeSettings(patch);
   return Response.json(await view());
 }

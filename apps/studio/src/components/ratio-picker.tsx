@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 
+import { t } from "@/lib/i18n";
 export type RatioOption = {
   value: string;
   /** Short name shown under the shape, e.g. "Dikey". */
@@ -31,7 +32,7 @@ export function RatioPicker({
 }) {
   if (compact) {
     return (
-      <div role="radiogroup" aria-label={label ?? "Oran"} className={cn("bg-muted/60 inline-flex h-9 items-stretch gap-0.5 rounded-md p-0.5", className)}>
+      <div role="radiogroup" aria-label={label ?? t("Oran")} className={cn("bg-muted/60 inline-flex h-9 items-stretch gap-0.5 rounded-md p-0.5", className)}>
         {options.map((o) => {
           const selected = o.value === value;
           const scale = 14 / Math.max(o.w, o.h);
@@ -41,7 +42,7 @@ export function RatioPicker({
               type="button"
               role="radio"
               aria-checked={selected}
-              title={o.detail}
+              title={t(o.detail)}
               onClick={() => onChange(o.value)}
               className={cn(
                 "flex items-center gap-1.5 rounded-[5px] px-2.5 text-xs font-semibold transition-colors",
@@ -52,7 +53,7 @@ export function RatioPicker({
                 className={cn("block rounded-[2px] border-[1.5px]", selected ? "border-primary bg-primary/15" : "border-current")}
                 style={{ width: Math.round(o.w * scale), height: Math.round(o.h * scale) }}
               />
-              {o.name}
+              {t(o.name)}
             </button>
           );
         })}
@@ -84,8 +85,8 @@ export function RatioPicker({
                   style={{ width: Math.round(o.w * scale), height: Math.round(o.h * scale) }}
                 />
               </span>
-              <span className="text-xs leading-none font-semibold">{o.name}</span>
-              <span className="text-[10px] leading-none opacity-70">{o.detail}</span>
+              <span className="text-xs leading-none font-semibold">{t(o.name)}</span>
+              <span className="text-[10px] leading-none opacity-70">{t(o.detail)}</span>
             </button>
           );
         })}

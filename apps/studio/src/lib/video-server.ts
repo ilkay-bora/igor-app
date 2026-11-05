@@ -1,6 +1,7 @@
 import { comfyUrl } from "./settings";
 import { ensureComfyRunning } from "./comfy-launcher";
 import { uploadImageToComfy, decodeImageDataUrl } from "./comfy-upload";
+import { tServer } from "@/lib/i18n-server";
 
 const POLL_TIMEOUT_MS = 20 * 60 * 1000; // videos take several minutes on 8GB VRAM
 
@@ -375,7 +376,7 @@ export async function runLTXVideoGeneration(params: {
       body: JSON.stringify({ prompt: workflow, client_id: clientId }),
     });
   } catch {
-    throw new Error(`ComfyUI'a bağlanılamadı. Yerel sunucu çalışıyor mu? (${comfyUrl()})`);
+    throw new Error(tServer("ComfyUI'a bağlanılamadı. Yerel sunucu çalışıyor mu? ({v1})", { v1: comfyUrl() }));
   }
 
   const queueData = await queueRes.json();
@@ -393,12 +394,12 @@ export async function runLTXVideoGeneration(params: {
     const entry = hist[promptId];
 
     if (entry?.status?.status_str === "error") {
-      throw new Error(`ComfyUI hatası: ${JSON.stringify(entry.status.messages ?? entry.status)}`);
+      throw new Error(tServer("ComfyUI hatası: {v1}", { v1: JSON.stringify(entry.status.messages ?? entry.status) }));
     }
 
     if (entry?.status?.completed) {
       const video = entry.outputs?.["75"]?.images?.[0];
-      if (!video) throw new Error("Video üretilemedi (çıktı boş)");
+      if (!video) throw new Error(tServer("Video üretilemedi (çıktı boş)"));
 
       const viewParams = new URLSearchParams({
         filename: video.filename,
@@ -411,5 +412,5 @@ export async function runLTXVideoGeneration(params: {
     }
   }
 
-  throw new Error("ComfyUI zaman aşımı (20 dakika)");
+  throw new Error(tServer("ComfyUI zaman aşımı (20 dakika)"));
 }

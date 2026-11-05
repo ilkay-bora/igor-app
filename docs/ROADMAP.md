@@ -32,6 +32,6 @@ Out of scope for v1: trend/idea scanning, model benchmarking, macOS/AMD.
 Audit on 2026-11-03: full git history is clean (no keys, `.env`, `data/`, generated media or personal content), so flipping visibility leaks nothing. Repo stays **private** until these are done, then visibility and announcement go together:
 
 1. DONE 2026-11-05. Small MCP server MVP: `generate_image`, `create_project`, `add_clip`, `render_project` (the headline promise in the repo description). Shipped with `add_text`, `remove_clip`, `get_render`, `list_*`, `open_in_editor` too.
-2. English UI option (TR/EN switch, start of phase 1 i18n).
+2. DONE 2026-11-05. English UI option (TR/EN switch, start of phase 1 i18n).
 3. README: 2-3 screenshots and a short demo GIF.
 4. DONE 2026-11-05. Quick fixes: `npm run dev` can't sign in without `APP_TOKEN` in `.env.local` (README now calls `.env` optional); editor text render hardcodes `C:/Windows/Fonts/arial.ttf`, switch to a bundled open-license font.

@@ -2,6 +2,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { enqueueJob, getJobs, type VideoJob } from "@/lib/video-jobs";
 import { renderTimeline, type EditorClipInput } from "@/lib/editor-render";
+import { tServer } from "@/lib/i18n-server";
 
 const STATE_PATH = path.join(process.cwd(), "data", "video-projects.json");
 
@@ -80,7 +81,7 @@ export async function enqueueProject(params: {
   motionLevel?: "normal" | "dusuk";
 }): Promise<VideoProject> {
   if (params.scenes.length < 2) {
-    throw new Error("Bir proje en az 2 sahne içermeli");
+    throw new Error(tServer("Bir proje en az 2 sahne içermeli"));
   }
 
   const list = await load();
@@ -158,7 +159,7 @@ export async function onSceneJobSettled(projectId: string): Promise<void> {
   const failedIndex = sceneJobs.findIndex((j) => j.status === "error");
   if (failedIndex !== -1) {
     project.status = "error";
-    project.error = `Sahne ${failedIndex + 1} üretilemedi: ${sceneJobs[failedIndex].error}`;
+    project.error = tServer("Sahne {v1} üretilemedi: {v2}", { v1: failedIndex + 1, v2: sceneJobs[failedIndex].error });
     await persist();
     return;
   }

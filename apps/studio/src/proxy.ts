@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { isValidToken } from "@/lib/local-token";
+import { tServer } from "@/lib/i18n-server";
 
 export function proxy(request: NextRequest) {
   if (isValidToken(request.cookies.get("igor_token")?.value)) {
@@ -13,7 +14,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
   if (request.nextUrl.pathname.startsWith("/api/")) {
-    return NextResponse.json({ error: "Yetkisiz: igor_token çerezi ya da Bearer token gerekli" }, { status: 401 });
+    return NextResponse.json({ error: tServer("Yetkisiz: igor_token çerezi ya da Bearer token gerekli") }, { status: 401 });
   }
 
   const loginUrl = new URL("/login", request.url);

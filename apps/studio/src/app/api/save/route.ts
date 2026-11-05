@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { decodeImage, saveGeneration } from "@/lib/generations";
+import { tServer } from "@/lib/i18n-server";
 
 export async function POST(request: Request) {
   const { prompt, modelId, modelLabel, ratio, dataUrl, sourceUrl, tag } = await request.json();
@@ -17,13 +18,13 @@ export async function POST(request: Request) {
   if (dataUrl) {
     const decoded = decodeImage(dataUrl);
     if (!decoded) {
-      return NextResponse.json({ error: "Geçersiz dataUrl" }, { status: 400 });
+      return NextResponse.json({ error: tServer("Geçersiz dataUrl") }, { status: 400 });
     }
     ({ buffer, ext } = decoded);
   } else {
     const res = await fetch(sourceUrl);
     if (!res.ok) {
-      return NextResponse.json({ error: "Kaynak görsel alınamadı" }, { status: 502 });
+      return NextResponse.json({ error: tServer("Kaynak görsel alınamadı") }, { status: 502 });
     }
     const contentType = res.headers.get("content-type") || "image/jpeg";
     ext = contentType.split("/")[1]?.split(";")[0] || "jpg";

@@ -1,4 +1,5 @@
 import { getSetting } from "./settings";
+import { tServer } from "@/lib/i18n-server";
 const MODEL = "gemini-2.5-flash-image";
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
@@ -20,7 +21,7 @@ export async function runGeminiGeneration(params: {
 }): Promise<{ imageUrl: string }> {
   const apiKey = getSetting("geminiApiKey");
   if (!apiKey) {
-    throw new Error("Gemini API anahtarı girilmemiş. Ayarlar sayfasından ekleyebilirsin.");
+    throw new Error(tServer("Gemini API anahtarı girilmemiş. Ayarlar sayfasından ekleyebilirsin."));
   }
 
   const requestParts: GeminiPart[] = [];
@@ -51,13 +52,13 @@ export async function runGeminiGeneration(params: {
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data?.error?.message || `Gemini API hatası (${res.status})`);
+    throw new Error(data?.error?.message || tServer("Gemini API hatası ({status})", { status: res.status }));
   }
 
   const parts: GeminiPart[] = data?.candidates?.[0]?.content?.parts ?? [];
   const imagePart = parts.find((p) => p.inlineData || p.inline_data);
   if (!imagePart) {
-    throw new Error("Gemini görsel döndürmedi");
+    throw new Error(tServer("Gemini görsel döndürmedi"));
   }
 
   const inline = imagePart.inlineData ?? imagePart.inline_data!;

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { XIcon } from "lucide-react";
 import { FitImage } from "@/components/fit-image";
+import { t } from "@/lib/i18n";
 
 export function FullscreenViewer({
   src,
@@ -34,7 +35,7 @@ export function FullscreenViewer({
       <button
         type="button"
         onClick={onClose}
-        aria-label="Kapat"
+        aria-label={t("Kapat")}
         className="absolute top-4 right-4 text-white/80 hover:text-white"
       >
         <XIcon className="size-7" />

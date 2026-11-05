@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { isValidToken } from "@/lib/local-token";
+import { tServer } from "@/lib/i18n-server";
 
 export async function POST(request: Request) {
   const { token } = await request.json();
 
   if (typeof token !== "string" || !isValidToken(token)) {
-    return NextResponse.json({ error: "Token yanlış" }, { status: 401 });
+    return NextResponse.json({ error: tServer("Token yanlış") }, { status: 401 });
   }
 
   const res = NextResponse.json({ ok: true });

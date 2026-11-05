@@ -16,7 +16,7 @@ IGOR runs on your own GPU. It generates images, video clips and voiceovers with 
 - **Character consistency**: one reference image and seed reused across scenes.
 - **Text to speech**: Gemini TTS voices with style presets.
 - **Tags**: group everything you make by project, client or channel.
-- **UI language**: Turkish and English (English in progress).
+- **UI language**: English and Turkish, switchable from the top bar or Settings (defaults to your system language).
 
 ## Requirements
 

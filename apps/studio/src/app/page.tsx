@@ -39,6 +39,7 @@ import {
   normalizeTag,
   toErrorMessage,
 } from "@/lib/providers";
+import { t } from "@/lib/i18n";
 
 type ItemStatus = "loading" | "done" | "error";
 type GalleryItem = {
@@ -122,18 +123,18 @@ export default function Home() {
       ...source,
     })
       .then((saved) => updateItem(id, { savedUrl: saved.url, savedId: saved.id }))
-      .catch((err) => console.error("Görsel kaydedilemedi:", err));
+      .catch((err) => console.error(t("Görsel kaydedilemedi:"), err));
   }
 
   function handleDelete(item: GalleryItem) {
     if (!item.savedId) return;
-    if (!window.confirm("Bu görseli silmek istediğine emin misin?")) return;
+    if (!window.confirm(t("Bu görseli silmek istediğine emin misin?"))) return;
     deleteGeneration(item.savedId)
       .then(() => {
         setItems((prev) => prev.filter((it) => it.id !== item.id));
         setSelected((s) => (s?.id === item.id ? null : s));
       })
-      .catch((err) => console.error("Görsel silinemedi:", err));
+      .catch((err) => console.error(t("Görsel silinemedi:"), err));
   }
 
   async function handleGenerate() {
@@ -221,8 +222,8 @@ export default function Home() {
           )}
         >
           <div className="overflow-hidden text-center">
-            <h1 className="text-3xl font-semibold tracking-tight">Ne oluşturalım?</h1>
-            <p className="text-muted-foreground mt-2 text-sm">Bir sahne anlat, modeli ve oranı seç, gerisini IGOR halletsin.</p>
+            <h1 className="text-3xl font-semibold tracking-tight">{t("Ne oluşturalım?")}</h1>
+            <p className="text-muted-foreground mt-2 text-sm">{t("Bir sahne anlat, modeli ve oranı seç, gerisini IGOR halletsin.")}</p>
           </div>
         </div>
 
@@ -234,7 +235,7 @@ export default function Home() {
           className="bg-card ring-foreground/10 focus-within:ring-primary/40 w-full max-w-4xl rounded-lg shadow-lg shadow-black/20 ring-1 transition-shadow"
         >
           <textarea
-            placeholder="Ne oluşturmak istersin? Enter ile oluştur, Shift+Enter yeni satır."
+            placeholder={t("Ne oluşturmak istersin? Enter ile oluştur, Shift+Enter yeni satır.")}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={(e) => {
@@ -248,16 +249,16 @@ export default function Home() {
           />
           <div className="border-border/60 flex flex-wrap items-center gap-2 border-t p-2.5">
             <Select value={modelId} onValueChange={(v) => v && setModelId(v)}>
-              <SelectTrigger className="w-64" aria-label="Model">
-                <SelectValue>{(v: string) => MODELS.find((m) => m.id === v)?.label ?? v}</SelectValue>
+              <SelectTrigger className="w-64" aria-label={t("Model")}>
+                <SelectValue>{(v: string) => t(MODELS.find((m) => m.id === v)?.label ?? v)}</SelectValue>
               </SelectTrigger>
               <SelectContent className="w-[22rem] max-w-[90vw]">
                 {MODELS.map((m) => (
                   <SelectItem key={m.id} value={m.id}>
                     <span className="flex w-full flex-col items-start gap-1 py-0.5">
-                      <span className="truncate text-sm">{m.label}</span>
+                      <span className="truncate text-sm">{t(m.label)}</span>
                       <Badge variant={m.kind === "gemini" ? "secondary" : "default"} className="text-[10px]">
-                        {m.badge}
+                        {t(m.badge)}
                       </Badge>
                     </span>
                   </SelectItem>
@@ -265,7 +266,7 @@ export default function Home() {
               </SelectContent>
             </Select>
 
-            <RatioPicker compact label="Oran" options={RATIO_OPTIONS} value={ratio} onChange={(v) => setRatio(v as Ratio)} />
+            <RatioPicker compact label={t("Oran")} options={RATIO_OPTIONS} value={ratio} onChange={(v) => setRatio(v as Ratio)} />
 
             <TagInput compact value={tag} onChange={setTag} suggestions={allTags} />
 
@@ -273,12 +274,12 @@ export default function Home() {
               {pendingCount > 0 && (
                 <span className="text-muted-foreground animate-in fade-in flex items-center gap-1.5 text-xs">
                   <Loader2 className="text-primary size-3.5 animate-spin" />
-                  {pendingCount} üretiliyor
+                  {pendingCount} {t("üretiliyor")}
                 </span>
               )}
               <Button type="submit" disabled={!prompt.trim()}>
                 <Sparkles data-icon="inline-start" />
-                Oluştur
+                {t("Oluştur")}
               </Button>
             </div>
           </div>
@@ -318,7 +319,7 @@ export default function Home() {
             onClick={() => galleryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
             className="text-muted-foreground hover:text-foreground animate-in fade-in mt-8 flex flex-col items-center gap-1 text-xs transition-colors duration-700"
           >
-            Galerin, {items.length} görsel
+            {t("Galerin,")} {items.length} {t("görsel")}
             <ChevronDown className="igor-nudge size-4" />
           </button>
         )}
@@ -327,7 +328,7 @@ export default function Home() {
       <div ref={galleryRef} className="mb-4 flex scroll-mt-20 flex-wrap items-center gap-x-4 gap-y-2">
         {items.length > 0 && (
           <h2 className="flex items-baseline gap-2 text-sm font-semibold">
-            Galeri <span className="text-muted-foreground text-xs font-normal">{visibleItems.length} görsel</span>
+            {t("Galeri")} <span className="text-muted-foreground text-xs font-normal">{visibleItems.length} {t("görsel")}</span>
           </h2>
         )}
         <TagFilter tags={allTags} active={filterTag} onChange={setFilterTag} />
@@ -335,7 +336,7 @@ export default function Home() {
 
       {hero && items.length === 0 ? null : visibleItems.length === 0 ? (
         <div className="text-muted-foreground flex flex-1 items-center justify-center py-24 text-center text-sm">
-          {items.length === 0 ? "Galerin burada görünecek." : "Bu etikette henüz görsel yok."}
+          {items.length === 0 ? t("Galerin burada görünecek.") : t("Bu etikette henüz görsel yok.")}
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
@@ -347,7 +348,7 @@ export default function Home() {
               onImgError={() =>
                 updateItem(item.id, {
                   status: "error",
-                  error: "Görsel üretilemedi.",
+                  error: t("Görsel üretilemedi."),
                 })
               }
               onDelete={() => handleDelete(item)}
@@ -363,7 +364,7 @@ export default function Home() {
             <div className="flex min-w-0 flex-col gap-3">
               <FitImage src={selected.url ?? ""} alt={selected.prompt} />
               <div className="flex flex-wrap items-center gap-2">
-                <Badge>{selected.model.label}</Badge>
+                <Badge>{t(selected.model.label)}</Badge>
                 <Badge variant="secondary">{selected.ratio}</Badge>
                 {selected.tag && <Badge variant="secondary">#{selected.tag}</Badge>}
                 <div className="ml-auto flex items-center gap-3">
@@ -372,7 +373,7 @@ export default function Home() {
                     onClick={() => selected.url && setFullscreenUrl(selected.url)}
                     className="text-primary text-sm font-medium underline-offset-4 hover:underline"
                   >
-                    Tam ekran
+                    {t("Tam ekran")}
                   </button>
                   {selected.savedUrl ? (
                     <a
@@ -380,10 +381,10 @@ export default function Home() {
                       download
                       className="text-primary text-sm font-medium underline-offset-4 hover:underline"
                     >
-                      İndir
+                      {t("İndir")}
                     </a>
                   ) : (
-                    <span className="text-muted-foreground text-xs">Kaydediliyor...</span>
+                    <span className="text-muted-foreground text-xs">{t("Kaydediliyor...")}</span>
                   )}
                   {selected.savedId && (
                     <button
@@ -391,7 +392,7 @@ export default function Home() {
                       onClick={() => handleDelete(selected)}
                       className="text-destructive text-sm font-medium underline-offset-4 hover:underline"
                     >
-                      Sil
+                      {t("Sil")}
                     </button>
                   )}
                 </div>
@@ -450,7 +451,7 @@ function GalleryTile({
             <div className="bg-primary/30 igor-glow absolute top-1/2 left-1/2 size-2/3 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl" />
             <div className="igor-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.07] to-transparent" />
             <div className="relative flex h-full flex-col items-center justify-center gap-1.5 p-4 text-center">
-              <span className="text-sm font-medium">Üretiliyor</span>
+              <span className="text-sm font-medium">{t("Üretiliyor")}</span>
               {item.startedAt && <ElapsedTimer since={item.startedAt} />}
               <p className="text-muted-foreground mt-1 line-clamp-2 max-w-[85%] text-xs">{item.prompt}</p>
             </div>
@@ -471,7 +472,7 @@ function GalleryTile({
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-3 text-center">
           <span className="text-destructive line-clamp-4 text-xs break-words">{item.error}</span>
           <Link href="/debug" className="text-primary text-xs underline-offset-4 hover:underline">
-            Hatalar sayfasında gör
+            {t("Hatalar sayfasında gör")}
           </Link>
         </div>
       )}
@@ -485,7 +486,7 @@ function GalleryTile({
               onClick={(e) => e.stopPropagation()}
               className="bg-background/90 text-foreground rounded-sm px-2 py-1 text-xs font-medium shadow"
             >
-              İndir
+              {t("İndir")}
             </a>
           )}
           {item.savedId && (
@@ -497,7 +498,7 @@ function GalleryTile({
               }}
               className="bg-background/90 text-destructive rounded-sm px-2 py-1 text-xs font-medium shadow"
             >
-              Sil
+              {t("Sil")}
             </button>
           )}
         </div>
