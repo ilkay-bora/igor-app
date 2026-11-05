@@ -6,8 +6,10 @@ import { layoutStrip } from "@/lib/editor-strip";
 import { motionAngleExpr, type ImageCrop, type MotionType } from "@/lib/editor-motion";
 
 const VIDEOS_DIR = path.join(process.cwd(), "public", "videos");
-const FONT_PATH = "C:/Windows/Fonts/arial.ttf";
-const BOLD_FONT_PATH = "C:/Windows/Fonts/arialbd.ttf";
+// Bundled Inter (SIL OFL, see assets/fonts/Inter-OFL.txt), the same face the
+// editor preview uses, so rendered text matches what was positioned on screen
+// and rendering doesn't depend on fonts installed on this machine.
+const BOLD_FONT_PATH = path.join(process.cwd(), "assets", "fonts", "Inter-Bold.ttf");
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 // xfade needs duration > 0 to behave predictably — a "cut" transition maps to
 // the "fade" style at a duration short enough to read as instant, so cut and
@@ -465,7 +467,7 @@ export async function renderTimeline(params: {
       }
       const outLabel = `[vt${i}]`;
       filters.push(
-        `${videoLabel}drawtext=fontfile='${escapeFilterPath(FONT_PATH)}':textfile='${escapeFilterPath(textFile)}':fontsize=${fontSize}:fontcolor=${fontColor}:borderw=3:bordercolor=black:x=${(ov.cx * width).toFixed(1)}-text_w/2:y=${(ov.cy * height).toFixed(1)}-text_h/2:enable='between(t\\,${mapTime(ov.startTime).toFixed(3)}\\,${mapEnd(ov.endTime).toFixed(3)})'${outLabel}`
+        `${videoLabel}drawtext=fontfile='${escapeFilterPath(BOLD_FONT_PATH)}':textfile='${escapeFilterPath(textFile)}':fontsize=${fontSize}:fontcolor=${fontColor}:borderw=3:bordercolor=black:x=${(ov.cx * width).toFixed(1)}-text_w/2:y=${(ov.cy * height).toFixed(1)}-text_h/2:enable='between(t\\,${mapTime(ov.startTime).toFixed(3)}\\,${mapEnd(ov.endTime).toFixed(3)})'${outLabel}`
       );
       videoLabel = outLabel;
     }

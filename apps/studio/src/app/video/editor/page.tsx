@@ -2015,7 +2015,7 @@ export default function EditorPage() {
                               left: `${(layout.textX / resolutionWidth) * 100}%`,
                               top: `${(line.centerY / resolutionHeight) * 100}%`,
                               fontSize: `${(layout.fontSize / resolutionWidth) * 100}cqw`,
-                              fontFamily: "Arial, sans-serif",
+                              fontFamily: "var(--font-sans), sans-serif",
                               fontWeight: 700,
                               lineHeight: 1,
                             }}
@@ -2051,7 +2051,7 @@ export default function EditorPage() {
                           top: `${o.cy * 100}%`,
                           fontSize: `${(o.fontSize / resolutionWidth) * 100}cqw`,
                           color: o.color,
-                          fontFamily: "Arial, sans-serif",
+                          fontFamily: "var(--font-sans), sans-serif",
                           fontWeight: 700,
                           lineHeight: 1.2,
                           WebkitTextStroke: `${(3 / resolutionWidth) * 100}cqw black`,

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
+import { isValidToken } from "@/lib/local-token";
 
 export async function POST(request: Request) {
   const { token } = await request.json();
-  const appToken = process.env.APP_TOKEN;
 
-  if (!appToken || token !== appToken) {
+  if (typeof token !== "string" || !isValidToken(token)) {
     return NextResponse.json({ error: "Token yanlış" }, { status: 401 });
   }
 

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { isValidToken } from "@/lib/local-token";
 
 export function proxy(request: NextRequest) {
-  const token = request.cookies.get("igor_token")?.value;
-  if (token && token === process.env.APP_TOKEN) {
+  if (isValidToken(request.cookies.get("igor_token")?.value)) {
     return NextResponse.next();
   }
 

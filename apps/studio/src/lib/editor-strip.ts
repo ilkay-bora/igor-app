@@ -7,9 +7,9 @@ const BAR_CENTER_Y = 101;
 const TEXT_LEFT = 287;
 const TEXT_RIGHT = 1023;
 const BASE_FONT = 44;
-// Conservative average width of an Arial Bold capital, in em. ffmpeg can't
+// Conservative average width of an Inter Bold capital, in em. ffmpeg can't
 // measure text before drawing it, so wrapping/shrinking works from this.
-const CHAR_EM = 0.62;
+const CHAR_EM = 0.63;
 
 export const STRIP_DEFAULT_Y = 0.77;
 

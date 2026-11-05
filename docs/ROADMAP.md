@@ -24,8 +24,8 @@ Out of scope for v1: trend/idea scanning, model benchmarking, macOS/AMD.
 ## Known issues to fix before release
 
 - Video job polling does not always honor its timeout when ComfyUI finishes but the job stays `running`.
-- Editor text rendering uses `C:/Windows/Fonts/arial.ttf`; replace with a bundled font.
-- Auth is a single shared `APP_TOKEN`; replace with a generated local token.
+- ~~Editor text rendering uses `C:/Windows/Fonts/arial.ttf`~~ DONE 2026-11-05: bundled Inter Bold (OFL) in `apps/studio/assets/fonts`, preview uses the same face. Packaging must ship `assets/` next to the standalone server.
+- ~~Auth is a single shared `APP_TOKEN`~~ DONE 2026-11-05: generated local token (`data/local-token`) when `APP_TOKEN` is unset, sign-in link printed at startup.
 
 ## Before going public (agreed 2026-11-03, start 2026-11-04)
 
@@ -34,4 +34,4 @@ Audit on 2026-11-03: full git history is clean (no keys, `.env`, `data/`, genera
 1. Small MCP server MVP: `generate_image`, `create_project`, `add_clip`, `render_project` (the headline promise in the repo description).
 2. English UI option (TR/EN switch, start of phase 1 i18n).
 3. README: 2-3 screenshots and a short demo GIF.
-4. Quick fixes: `npm run dev` can't sign in without `APP_TOKEN` in `.env.local` (README now calls `.env` optional); editor text render hardcodes `C:/Windows/Fonts/arial.ttf`, switch to a bundled open-license font.
+4. DONE 2026-11-05. Quick fixes: `npm run dev` can't sign in without `APP_TOKEN` in `.env.local` (README now calls `.env` optional); editor text render hardcodes `C:/Windows/Fonts/arial.ttf`, switch to a bundled open-license font.
