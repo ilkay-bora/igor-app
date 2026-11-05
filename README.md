@@ -6,6 +6,10 @@ IGOR runs on your own GPU. It generates images, video clips and voiceovers with 
 
 > Status: early development. The desktop shell and a first MCP server run; the installer is being built, see [docs/ROADMAP.md](docs/ROADMAP.md).
 
+![An agent-built project opened in the IGOR editor and played back](docs/images/editor-demo.gif)
+
+*Six images generated with local FLUX, put on a timeline with transitions and captions, and rendered, all through the MCP server. Then opened in the editor for polishing.*
+
 [Türkçe](#türkçe)
 
 ## Features
@@ -17,6 +21,14 @@ IGOR runs on your own GPU. It generates images, video clips and voiceovers with 
 - **Text to speech**: Gemini TTS voices with style presets.
 - **Tags**: group everything you make by project, client or channel.
 - **UI language**: English and Turkish, switchable from the top bar or Settings (defaults to your system language).
+
+## Screenshots
+
+| Timeline editor | Image generation and gallery |
+| --- | --- |
+| ![Timeline editor with clips, transitions and a selected text layer](docs/images/editor.png) | ![Create page with the prompt composer](docs/images/create.png) |
+| **Gallery** | **ComfyUI setup guide with a live model checklist** |
+| ![Gallery of generated images](docs/images/gallery.png) | ![ComfyUI setup guide](docs/images/comfyui-guide.png) |
 
 ## Requirements
 
@@ -51,6 +63,8 @@ Or in any client's JSON config: `{"command": "node", "args": ["/path/to/igor-app
 It finds IGOR by itself: the desktop app's `server.json` while it runs, otherwise a dev server on `localhost:3000` with the token from `apps/studio/.env.local` or `data/local-token`. `IGOR_URL` + `IGOR_TOKEN` override both.
 
 Tools: `generate_image`, `list_media`, `create_project`, `list_projects`, `get_project`, `add_clip`, `remove_clip`, `add_text`, `render_project`, `get_render`, `open_in_editor`. A typical run: generate a few images, create a vertical project, add them as clips with transitions, add a caption, render, and hand the user the editor link (`/video/editor?project=<id>`) to polish it.
+
+A runnable example of the whole flow is in [`packages/mcp/examples/demo-project.mjs`](packages/mcp/examples/demo-project.mjs); it made the demo at the top of this page.
 
 Images added as clips become short MP4 clips at the project resolution, so they play and trim in the editor like any video. A cold ComfyUI start takes over a minute; the server sends progress heartbeats so clients that support them keep waiting.
 
