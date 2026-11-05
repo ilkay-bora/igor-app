@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { STRIP_DEFAULT_Y, layoutStrip } from "@/lib/editor-strip";
 import { MOTIONS, NO_CROP, TEXT_POSITION_Y, motionAngle, type ImageCrop, type MotionType } from "@/lib/editor-motion";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/editor-draft";
+import { draftToRenderParams, type AudioLayer, type EditorDraft, type ImageLayer, type OverlayForm, type StripLayer, type TimelineClip } from "@/lib/editor-schema";
 import { TRANSITION_PREVIEW_SECONDS, transitionFrame } from "@/lib/editor-transition-preview";
 import {
   TRANSITIONS,
@@ -66,80 +67,6 @@ type LibraryItem = {
   duration: number;
   kind: "clip" | "proje sahnesi" | "sahne projesi (tümü)";
   portrait?: boolean;
-};
-
-type TimelineClip = {
-  key: string;
-  sourceUrl: string;
-  label: string;
-  knownDuration: number;
-  trimStart: number;
-  trimEnd: number;
-  transitionAfter: TransitionType;
-  muteOriginal: boolean;
-  volume?: number;
-  audioExtracted?: boolean;
-};
-
-type AudioLayer = {
-  key: string;
-  kind: "music" | "voice" | "extracted";
-  label: string;
-  src: string;
-  filename?: string;
-  start: number;
-  trimStart: number;
-  trimEnd: number;
-  sourceDuration: number;
-  volume: number;
-  loop: boolean;
-};
-
-type StripLayer = {
-  key: string;
-  text: string;
-  startTime: number;
-  endTime: number;
-  yPct: number;
-};
-
-type OverlayForm = {
-  key: string;
-  text: string;
-  startTime: number;
-  endTime: number;
-  cx: number;
-  cy: number;
-  motion: MotionType;
-  fontSize: number;
-  color: string;
-};
-
-type EditorDraft = {
-  timeline: TimelineClip[];
-  audioLayers: AudioLayer[];
-  strips: StripLayer[];
-  imageLayers: ImageLayer[];
-  overlays: OverlayForm[];
-  resolution: string;
-  pxPerSec: number;
-};
-
-type ImageLayer = {
-  key: string;
-  label: string;
-  src: string;
-  filename?: string;
-  startTime: number;
-  endTime: number;
-  cx: number;
-  cy: number;
-  widthPct: number;
-  rotation: number;
-  motion: MotionType;
-  crop?: ImageCrop;
-  // Source height / width, read when the image loads.
-  aspect?: number;
 };
 
 // Text rather than a number input: "37," mid-typing would otherwise read as
@@ -483,8 +410,34 @@ export default function EditorPage() {
 
   // Restored before saving starts, or the first save would wipe the draft
   // with this page's empty initial state.
+  // ?project=<id> (from an agent's open_in_editor) replaces the draft with a
+  // saved project, after asking if the current draft has anything in it.
+  // Guarded so dev's double-run effects don't ask twice.
+  const draftLoadStarted = useRef(false);
   useEffect(() => {
-    loadDraft<EditorDraft>().then((draft) => {
+    if (draftLoadStarted.current) return;
+    draftLoadStarted.current = true;
+    (async () => {
+      let draft = await loadDraft<EditorDraft>();
+      const params = new URLSearchParams(window.location.search);
+      const projectId = params.get("project");
+      if (projectId) {
+        const res = await fetch(`/api/projects/${encodeURIComponent(projectId)}`, { cache: "no-store" });
+        const project = res.ok ? ((await res.json()) as { name: string; draft: EditorDraft }) : null;
+        const draftHasContent =
+          !!draft && (draft.timeline.length > 0 || draft.overlays.length > 0 || draft.audioLayers.length > 0);
+        if (!project) {
+          window.alert("Proje bulunamadı, mevcut taslak açılıyor.");
+        } else if (
+          !draftHasContent ||
+          window.confirm(`"${project.name}" projesi açılsın mı? Editördeki mevcut taslağın yerine geçecek.`)
+        ) {
+          draft = project.draft;
+        }
+        params.delete("project");
+        const query = params.toString();
+        window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+      }
       if (draft) {
         setTimeline(draft.timeline);
         setAudioLayers(draft.audioLayers);
@@ -495,7 +448,7 @@ export default function EditorPage() {
         setPxPerSec(draft.pxPerSec);
       }
       setDraftReady(true);
-    });
+    })();
   }, []);
 
   useEffect(() => {
@@ -1447,54 +1400,9 @@ export default function EditorPage() {
 
   async function handleRender() {
     if (timeline.length === 0) return;
-    const [width, height] = resolution.split("x").map(Number);
-    await enqueueEditorProject({
-      clips: timeline.map((c) => ({
-        sourcePath: c.sourceUrl,
-        trimStart: c.trimStart,
-        trimEnd: c.trimEnd,
-        transitionAfter: c.transitionAfter,
-        muteOriginal: c.muteOriginal,
-        volume: c.volume,
-      })),
-      width,
-      height,
-      fps: 25,
-      overlays: overlays
-        .filter((o) => o.text.trim())
-        .map(({ text, startTime, endTime, cx, cy, motion, fontSize, color }) => ({
-          text,
-          startTime,
-          endTime,
-          cx,
-          cy,
-          motion,
-          fontSize,
-          color,
-        })),
-      audioLayers: audioLayers.map(({ src, filename, start, trimStart, trimEnd, volume, loop }) => ({
-        src,
-        filename,
-        start,
-        trimStart,
-        trimEnd,
-        volume,
-        loop,
-      })),
-      strips: strips.map(({ text, startTime, endTime, yPct }) => ({ text, startTime, endTime, yPct })),
-      imageLayers: imageLayers.map(({ src, filename, startTime, endTime, cx, cy, widthPct, rotation, motion, crop }) => ({
-        src,
-        filename,
-        startTime,
-        endTime,
-        cx,
-        cy,
-        widthPct,
-        rotation,
-        motion,
-        crop,
-      })),
-    });
+    await enqueueEditorProject(
+      draftToRenderParams({ timeline, audioLayers, strips, imageLayers, overlays, resolution, pxPerSec })
+    );
     await loadProjects();
   }
 

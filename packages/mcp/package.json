@@ -1,0 +1,23 @@
+{
+  "name": "igor-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for IGOR, the local AI video editor: generate images and build, render and open editor projects from your agent",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "igor-mcp": "src/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

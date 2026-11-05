@@ -7,6 +7,15 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Agents (the MCP server, scripts) send the same token as a bearer header.
+  const auth = request.headers.get("authorization");
+  if (auth?.startsWith("Bearer ") && isValidToken(auth.slice(7).trim())) {
+    return NextResponse.next();
+  }
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.json({ error: "Yetkisiz: igor_token çerezi ya da Bearer token gerekli" }, { status: 401 });
+  }
+
   const loginUrl = new URL("/login", request.url);
   loginUrl.searchParams.set("next", request.nextUrl.pathname);
   return NextResponse.redirect(loginUrl);

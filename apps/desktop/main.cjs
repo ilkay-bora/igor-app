@@ -204,8 +204,27 @@ async function start() {
     sameSite: "lax",
     expirationDate: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365,
   });
+  writeServerInfo(base, token);
   createTray();
   createMainWindow(`${base}/`);
+}
+
+// The MCP server (packages/mcp) reads this to find the running studio: the
+// port changes between runs, the token doesn't.
+function serverInfoFile() {
+  return path.join(app.getPath("userData"), "server.json");
+}
+
+function writeServerInfo(url, token) {
+  fs.writeFileSync(serverInfoFile(), JSON.stringify({ url, token, pid: process.pid, studioDir: STUDIO_DIR }, null, 2));
+}
+
+function removeServerInfo() {
+  try {
+    fs.rmSync(serverInfoFile(), { force: true });
+  } catch {
+    // nothing to clean up
+  }
 }
 
 function fail(err) {
@@ -220,6 +239,7 @@ app.on("before-quit", () => {
   quitting = true;
 });
 app.on("will-quit", () => {
+  removeServerInfo();
   if (server && server.exitCode === null) {
     try {
       execFile("taskkill", ["/pid", String(server.pid), "/T", "/F"]);
