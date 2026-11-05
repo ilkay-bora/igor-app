@@ -20,3 +20,6 @@ apps/studio/public/videos/
 apps/studio/public/voices/
 apps/studio/public/uploads/
 apps/studio/public/benchmark/
+
+# Local working notes (session logs), kept out of the public repo
+/notes/

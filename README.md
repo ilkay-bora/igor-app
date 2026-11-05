@@ -1,4 +1,4 @@
-# IGOR
+<p align="center"><img src="docs/images/banner.png" alt="IGOR, your agent's video lab assistant" width="100%"></p>
 
 **A local AI video editor that your agents can drive.** The agent drafts the edit, you polish it.
 
@@ -45,10 +45,10 @@ npm install
 npm run desktop:build   # builds the studio and opens the desktop app
 ```
 
-- **First run** opens a short setup screen: paste your Gemini / Pollinations keys (optional) and point IGOR at your ComfyUI folder. Everything can be changed later under **Ayarlar** (settings). Values are stored locally in `apps/studio/data/settings.json`; `apps/studio/.env.local` still works as a fallback.
-- **No ComfyUI yet?** The in-app guide (Ayarlar, then "kurulum rehberi") walks through the portable release from GitHub, where each model file goes, and checks live which ones are installed. Git installs (`venv`/`.venv`) and the portable layout (`python_embeded`) are both detected, and IGOR starts ComfyUI in the background without a console window.
+- **First run** opens a short setup screen: paste your Gemini / Pollinations keys (optional) and point IGOR at your ComfyUI folder. Everything can be changed later under **Settings**. Values are stored locally in `apps/studio/data/settings.json`; `apps/studio/.env.local` still works as a fallback.
+- **No ComfyUI yet?** The in-app guide (Settings, then "ComfyUI setup guide") walks through the portable release from GitHub, where each model file goes, and checks live which ones are installed. Git installs (`venv`/`.venv`) and the portable layout (`python_embeded`) are both detected, and IGOR starts ComfyUI in the background without a console window.
 - **Desktop shortcut**: every `npm run build` creates or refreshes an `IGOR` shortcut on your Windows desktop (`npm run shortcut` does it on demand). After that, open IGOR from the shortcut or with `npm run desktop`.
-- The app opens on the create page, signs itself in with a local token and keeps running in the tray when you close the window, so queued jobs continue. `npm run dev` runs the studio in a browser at http://localhost:3000 for development. On first start it creates a local sign-in token (`apps/studio/data/local-token`) and prints a one-click sign-in link in the terminal; `APP_TOKEN` in `.env.local` overrides it.
+- The app opens on the create page, and signs itself in with a local token. Closing the window quits IGOR; if jobs are still running it waits in the tray and quits once they finish. The ComfyUI instance IGOR started stops with it, and after 10 idle minutes. `npm run dev` runs the studio in a browser at http://localhost:3000 for development. On first start it creates a local sign-in token (`apps/studio/data/local-token`) and prints a one-click sign-in link in the terminal; `APP_TOKEN` in `.env.local` overrides it.
 
 ## MCP server (agents)
 
@@ -74,10 +74,14 @@ Images added as clips become short MP4 clips at the project resolution, so they 
 apps/studio     Next.js app: UI and local API
 apps/desktop    Electron shell: window, tray, starts the studio server
 packages/mcp    MCP server (npm name igor-mcp), talks to the studio API
-docs/           Roadmap and design notes
+docs/           Roadmap, README images
 ```
 
 Planned: `packages/core` (engine shared by UI, API and MCP).
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
