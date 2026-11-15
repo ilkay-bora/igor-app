@@ -1,6 +1,20 @@
 <p align="center"><img src="docs/images/banner.png" alt="IGOR, your agent's video lab assistant" width="100%"></p>
 
-**A local AI video editor that your agents can drive.** The agent drafts the edit, you polish it.
+<p align="center">
+  <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green">
+  <img alt="Price: free" src="https://img.shields.io/badge/price-free-brightgreen">
+  <img alt="Platform: Windows + NVIDIA" src="https://img.shields.io/badge/platform-Windows%20%2B%20NVIDIA-blue">
+</p>
+
+**A free, local AI video editor that your agents can drive.** The agent drafts the edit, you polish it.
+
+## Free, for real
+
+- **No price, no subscription, no account.** IGOR is free and open source under the MIT license, including for commercial use.
+- **No usage limits or watermarks.** Generate and render as much as your hardware allows.
+- **Runs offline on your own GPU.** With local models (FLUX, LTX-2.3 via ComfyUI) generation costs nothing but electricity.
+- **No telemetry.** Nothing you make leaves your machine unless you choose a cloud provider.
+- **Cloud is optional, bring your own key.** Gemini and Pollinations are there if you want them; you pay those providers directly, IGOR adds nothing on top.
 
 IGOR runs on your own GPU. It generates images, video clips and voiceovers with local models (via ComfyUI) or your own cloud API keys, and puts them on a timeline editor that renders to MP4 with ffmpeg. An MCP server lets Claude Code, Cursor and other agents generate images, build and render editor projects, which you then open in the same editor.
 
@@ -85,13 +99,15 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-MIT. Model weights you download are covered by their own licenses.
+MIT: free to use, modify and share, commercially too. Model weights you download are covered by their own licenses.
 
 ---
 
 ## Türkçe
 
-**Agent'larının da kullanabildiği lokal bir AI video editörü.** Agent taslağı kurgular, sen cilalarsın.
+**Agent'larının da kullanabildiği ücretsiz, lokal bir AI video editörü.** Agent taslağı kurgular, sen cilalarsın.
+
+**Tamamen ücretsiz:** fiyat, abonelik, hesap yok. MIT lisanslı açık kaynak, ticari kullanım dahil. Kullanım limiti ve filigran yok, telemetri yok. Lokal modellerle (ComfyUI) üretim bedava, bulut sağlayıcılar (Gemini, Pollinations) isteğe bağlı ve kendi anahtarınla çalışır, IGOR üstüne bir şey eklemez.
 
 IGOR kendi GPU'nda çalışır. Lokal modellerle (ComfyUI üzerinden) ya da kendi API anahtarlarınla görsel, video ve seslendirme üretir, bunları ffmpeg ile MP4'e render eden bir timeline editörüne koyar. MCP sunucusu (`packages/mcp`) sayesinde Claude Code, Cursor gibi agent'lar görsel üretip proje kurabilir ve render alabilir, sen de aynı projeyi editörde açıp düzeltirsin.
 

@@ -2,7 +2,11 @@
 
 Notable changes to IGOR. The project is pre-release; versions start with the first public build.
 
-## Unreleased
+## 0.1.0 (2026-11-15), first public release
+
+### Changed
+- README states the pricing model: free, MIT, no account, no telemetry, cloud providers bring-your-own-key.
+
 
 ### Added
 - MCP server (`packages/mcp`, `igor-mcp`): agents generate images, build, render and open editor projects. Saved projects API under `/api/projects`.
