@@ -50,6 +50,22 @@ IGOR runs on your own GPU. It generates images, video clips and voiceovers with 
 - Node.js 20+
 - [ComfyUI](https://github.com/comfyanonymous/ComfyUI) with the models you want to use. Models are not bundled; each has its own license (FLUX.1-dev and LTX-2 have non-commercial or revenue-limited terms, check them before commercial use).
 
+## Install with your agent
+
+The quickest way: paste this into Claude Code, Cursor or any coding agent that can run commands on your machine, and let it do the setup.
+
+```text
+Install IGOR (https://github.com/ilkay-bora/igor-app) on this Windows machine and set it up for me:
+1. Check the requirements: Node.js 20+, git, an NVIDIA GPU (nvidia-smi). Tell me if anything is missing and how to get it.
+2. Clone the repo into a folder on a drive with plenty of free space, then run `npm install` and `npm run desktop:build`.
+3. Ask me if I already have ComfyUI. If not, don't download models yourself; point me to the in-app guide (Settings, then "ComfyUI setup guide").
+4. Register the MCP server so you can drive IGOR: `claude mcp add igor -- node <repo>/packages/mcp/src/index.js` (or the equivalent for your client).
+5. When the app is open, confirm it works by calling the IGOR MCP tool `list_projects`, then tell me what to do next.
+Don't ask me for API keys; I can add Gemini/Pollinations keys later in Settings if I want them.
+```
+
+Prefer doing it by hand? Follow the steps below.
+
 ## Getting started
 
 ```bash
@@ -111,4 +127,16 @@ MIT: free to use, modify and share, commercially too. Model weights you download
 
 IGOR kendi GPU'nda çalışır. Lokal modellerle (ComfyUI üzerinden) ya da kendi API anahtarlarınla görsel, video ve seslendirme üretir, bunları ffmpeg ile MP4'e render eden bir timeline editörüne koyar. MCP sunucusu (`packages/mcp`) sayesinde Claude Code, Cursor gibi agent'lar görsel üretip proje kurabilir ve render alabilir, sen de aynı projeyi editörde açıp düzeltirsin.
 
-Kurulum için yukarıdaki "Getting started" adımlarını izle. Kısaca: `npm install` ve `npm run desktop:build`. İlk açılışta API anahtarlarını ve ComfyUI klasörünü soran bir kurulum ekranı gelir, bunları sonra Ayarlar'dan değiştirebilirsin. ComfyUI kurulu değilse uygulamadaki rehber GitHub'dan indirmeyi ve model dosyalarını adım adım anlatır. Her build sonrası masaüstüne bir IGOR kısayolu konur. Yol haritası: [docs/ROADMAP.md](docs/ROADMAP.md).
+**Agent'ına kurdur:** en kolayı, şu metni Claude Code, Cursor gibi bilgisayarında komut çalıştırabilen bir agent'a yapıştırmak:
+
+```text
+IGOR'u (https://github.com/ilkay-bora/igor-app) bu Windows bilgisayara kur ve benim için ayarla:
+1. Gereksinimleri kontrol et: Node.js 20+, git, NVIDIA GPU (nvidia-smi). Eksik varsa söyle ve nasıl kuracağımı anlat.
+2. Repo'yu boş yeri bol bir sürücüde bir klasöre klonla, sonra `npm install` ve `npm run desktop:build` çalıştır.
+3. ComfyUI'ım olup olmadığını sor. Yoksa modelleri kendin indirme, beni uygulamadaki rehbere yönlendir (Ayarlar, sonra "ComfyUI kurulum rehberi").
+4. IGOR'u kullanabilmen için MCP sunucusunu ekle: `claude mcp add igor -- node <repo>/packages/mcp/src/index.js` (ya da kullandığın istemcideki karşılığı).
+5. Uygulama açılınca IGOR MCP aracı `list_projects` ile çalıştığını doğrula, sonra ne yapmam gerektiğini söyle.
+Benden API anahtarı isteme, istersem Gemini/Pollinations anahtarlarını sonra Ayarlar'dan eklerim.
+```
+
+Elle kurmak istersen yukarıdaki "Getting started" adımlarını izle. Kısaca: `npm install` ve `npm run desktop:build`. İlk açılışta API anahtarlarını ve ComfyUI klasörünü soran bir kurulum ekranı gelir, bunları sonra Ayarlar'dan değiştirebilirsin. ComfyUI kurulu değilse uygulamadaki rehber GitHub'dan indirmeyi ve model dosyalarını adım adım anlatır. Her build sonrası masaüstüne bir IGOR kısayolu konur. Yol haritası: [docs/ROADMAP.md](docs/ROADMAP.md).
